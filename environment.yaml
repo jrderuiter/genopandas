@@ -1,0 +1,13 @@
+name: genopandas-dev
+dependencies:
+  - python =3.6
+  - pandas
+  - intervaltree
+  - pysam
+  - pytest
+  - pylint
+  - yapf
+
+  - pip
+  - pip:
+    - pytest-helpers-namespace
