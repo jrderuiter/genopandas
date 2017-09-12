@@ -1,4 +1,5 @@
-from .pandas import GenomicDataFrame, GenomicIndex
+from .model import (GenomicDataFrame, GenomicIndex, RegionMatrix, FeatureMatrix,
+                    Interval, IntervalTree, GenomicIntervalTree)
 from .tree import Interval, IntervalTree, GenomicIntervalTree
 
 __author__ = 'Julian de Ruiter'
