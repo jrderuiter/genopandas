@@ -7,16 +7,11 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from tqdm import tqdm
-from scipy.spatial.distance import pdist
-from scipy.cluster.hierarchy import linkage
-from sklearn.decomposition import PCA
 from pandas.api.types import is_numeric_dtype
 
-from ngstk2.plotting.genomic import plot_genomic
-from ngstk2.plotting.clustermap import color_annotation, draw_legends
-
-from genopandas import GenomicDataFrame
+from .frame import GenomicDataFrame
+from ..plotting.genomic import plot_genomic
+from ..plotting.clustermap import color_annotation, draw_legends
 
 
 class AnnotatedMatrix(object):
@@ -262,6 +257,12 @@ class FeatureMatrix(AnnotatedMatrix):
     def plot_pca(self, components=(1, 2), **kwargs):
         """Plots PCA of samples."""
 
+        try:
+            from sklearn.decomposition import PCA
+        except ImportError:
+            raise ImportError('Scikit-learn must be installed to '
+                              'perform PCA analyses')
+
         # Fit PCA and transform expression.
         n_components = max(components)
 
@@ -288,6 +289,12 @@ class FeatureMatrix(AnnotatedMatrix):
 
     def plot_pca_variance(self, n_components, ax=None):
         """Plots variance explained by PCA components."""
+
+        try:
+            from sklearn.decomposition import PCA
+        except ImportError:
+            raise ImportError('Scikit-learn must be installed to '
+                              'perform PCA analyses')
 
         pca = PCA(n_components=n_components)
         pca.fit(self.values.values.T)
@@ -446,6 +453,7 @@ class RegionMatrix(AnnotatedMatrix):
         gene_rows = genes.itertuples()
 
         if verbose:
+            from tqdm import tqdm
             gene_rows = tqdm(gene_rows, total=genes.shape[0])
 
         # Determine calls.
@@ -489,6 +497,13 @@ class RegionMatrix(AnnotatedMatrix):
             # Do clustering on matrix with only finite values.
             values_clust = self._values.replace([np.inf, -np.inf], np.nan)
             values_clust = values_clust.dropna()
+
+            try:
+                from scipy.spatial.distance import pdist
+                from scipy.cluster.hierarchy import linkage
+            except ImportError:
+                raise ImportError('Scipy must be installed to '
+                                  'perform clustering')
 
             dist = pdist(values_clust.T, metric=metric)
             sample_linkage = linkage(dist, method=method)
