@@ -4,7 +4,7 @@
 from setuptools import setup, find_packages
 
 REQUIREMENTS = [
-    'intervaltree', 'pandas', 'numpy', 'natsort', 'pysam'
+    'intervaltree', 'pandas', 'numpy', 'natsort'
 ]
 
 setup(

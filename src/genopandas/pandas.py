@@ -1,12 +1,10 @@
 """Dataframe-related functions/classes."""
 
-import itertools
-import operator
+from collections import OrderedDict
 
 from natsort import natsorted
 import numpy as np
 import pandas as pd
-import pysam
 
 from .tree import GenomicIntervalTree
 
@@ -16,6 +14,36 @@ class GenomicDataFrame(pd.DataFrame):
 
     Requires columns 'chromosome', 'start' and 'end' to be present in the
     DataFrame, as these columns are used for indexing.
+
+    Examples
+    --------
+
+    Constructing from scratch:
+
+    >>> df = pd.DataFrame.from_records(
+    ...    [('1', 10, 20), ('2', 10, 20), ('2', 30, 40)],
+    ...    columns=['chromosome', 'start', 'end'])
+    >>> GenomicDataFrame(df)
+
+    Constructing with non-default columns:
+
+    >>> df = pd.DataFrame.from_records(
+    ...    [('1', 10, 20), ('2', 10, 20), ('2', 30, 40)],
+    ...    columns=['chrom', 'chromStart', 'chromEnd'])
+    >>> GenomicDataFrame(
+    ...    df,
+    ...    chromosome_col='chrom',
+    ...    start_col='start',
+    ...    end_col='end')
+
+    Reading from a GTF file:
+
+    >>> GenomicDataFrame.from_gtf('/path/to/reference.gtf.gz')
+
+    Querying by genomic position:
+
+    >>> genomic_df.gi.search('2', 30, 50)
+
     """
 
     _internal_names = pd.DataFrame._internal_names + ['_gi']
@@ -25,7 +53,8 @@ class GenomicDataFrame(pd.DataFrame):
 
     def __init__(self,
                  *args,
-                 chrom_col='chromosome',
+                 use_index=False,
+                 chromosome_col='chromosome',
                  start_col='start',
                  end_col='end',
                  chrom_lengths=None,
@@ -34,7 +63,8 @@ class GenomicDataFrame(pd.DataFrame):
 
         self._gi = None
         self._gi_metadata = {
-            'chrom_col': chrom_col,
+            'use_index': use_index,
+            'chromosome_col': chromosome_col,
             'start_col': start_col,
             'end_col': end_col,
             'lengths': chrom_lengths
@@ -52,8 +82,31 @@ class GenomicDataFrame(pd.DataFrame):
         return GenomicDataFrame
 
     @classmethod
+    def from_csv(cls,
+                 file_path,
+                 use_index=False,
+                 chromosome_col='chromosome',
+                 start_col='start',
+                 end_col='end',
+                 chrom_lengths=None,
+                 **kwargs):
+        data = pd.DataFrame.from_csv(file_path, **kwargs)
+        return cls(data,
+                   use_index=use_index,
+                   chromosome_col=chromosome_col,
+                   start_col=start_col,
+                   end_col=end_col,
+                   chrom_lengths=chrom_lengths)
+
+    @classmethod
     def from_gtf(cls, gtf_path, filter_=None):
         """Build a GenomicDataFrame from a GTF file."""
+
+        try:
+            import pysam
+        except ImportError:
+            raise ImportError('Pysam needs to be installed for '
+                              'reading GTF files')
 
         def _record_to_row(record):
             row = {
@@ -79,7 +132,7 @@ class GenomicDataFrame(pd.DataFrame):
 
         # Build dataframe.
         rows = (_record_to_row(rec) for rec in records)
-        data = cls(pd.DataFrame.from_records(rows), chrom_col='contig')
+        data = cls(pd.DataFrame.from_records(rows), chromosome_col='contig')
 
         # Reorder columns to correspond with GTF format.
         columns = ('contig', 'source', 'feature', 'start', 'end', 'score',
@@ -112,13 +165,25 @@ class GenomicIndex(object):
 
     def __init__(self,
                  df,
-                 chrom_col='chromosome',
+                 use_index=False,
+                 chromosome_col='chromosome',
                  start_col='start',
                  end_col='end',
                  lengths=None):
-        self._df = df
 
-        self._chrom_col = chrom_col
+        if use_index:
+            if df.index.nlevels != 3:
+                raise ValueError('Dataframe index does not have three levels '
+                                 '(chromosome, start, end)')
+        else:
+            for col in [chromosome_col, start_col, end_col]:
+                if col not in df.columns:
+                    raise ValueError('Column {!r} not in dataframe'.format(col))
+
+        self._df = df
+        self._use_index = use_index
+
+        self._chrom_col = chromosome_col
         self._start_col = start_col
         self._end_col = end_col
         self._lengths = lengths
@@ -133,16 +198,18 @@ class GenomicIndex(object):
     @property
     def chromosome(self):
         """Chromosome values."""
+        if self._use_index:
+            return pd.Series(self._df.index.get_level_values(0))
         return self._df[self._chrom_col]
 
     @property
     def chromosomes(self):
         """Available chromosomes."""
-        return natsorted(self.chromosome.unique())
+        return list(self.chromosome.unique())
 
     @property
     def chromosome_lengths(self):
-        """Lengths of available chromosomes."""
+        """Chromosome lengths."""
         if self._lengths is None:
             lengths = self.end.groupby(self.chromosome).max()
             self._lengths = dict(zip(lengths.index, lengths.values))
@@ -152,28 +219,80 @@ class GenomicIndex(object):
         }
 
     @property
+    def chromosome_offsets(self):
+        """Chromosome offsets (used when plotting chromosomes linearly)."""
+
+        # Sort lengths by chromosome.
+        chromosomes = self.chromosomes
+        lengths = self.chromosome_lengths
+
+        # Record offsets in ordered dict.
+        sorted_lengths = [lengths[chrom] for chrom in chromosomes]
+
+        cumsums = np.concatenate([[0], np.cumsum(sorted_lengths)])
+        offsets = OrderedDict(zip(chromosomes, cumsums[:-1]))
+
+        # Add special marker for end.
+        offsets['_END_'] = cumsums[-1]
+
+        return offsets
+
+    @property
     def start(self):
-        """Start values."""
+        """Start positions."""
+        if self._use_index:
+            return pd.Series(self._df.index.get_level_values(1))
         return self._df[self._start_col]
 
     @property
+    def start_offset(self):
+        """Start positions, offset by chromosome lengths."""
+
+        offsets = pd.Series(self.chromosome_offsets)
+        return self.start + offsets.loc[self.chromosome].values
+
+    @property
     def end(self):
-        """End values."""
+        """End positions."""
+        if self._use_index:
+            return pd.Series(self._df.index.get_level_values(2))
         return self._df[self._end_col]
+
+    @property
+    def end_offset(self):
+        """End positions, offset by chromosome lengths."""
+
+        offsets = pd.Series(self.chromosome_offsets)
+        return self.end + offsets.loc[self.chromosome].values
 
     @property
     def chromosome_col(self):
         """Chromosome column name."""
+
+        if self._use_index:
+            raise ValueError('Chromosome is in the index and cannot '
+                             'be referred to by column name')
+
         return self._chrom_col
 
     @property
     def start_col(self):
         """Start column name."""
+
+        if self._use_index:
+            raise ValueError('Start is in the index and cannot '
+                             'be referred to by column name')
+
         return self._start_col
 
     @property
     def end_col(self):
         """End column name."""
+
+        if self._use_index:
+            raise ValueError('End is in the index and cannot '
+                             'be referred to by column name')
+
         return self._end_col
 
     @property
@@ -186,11 +305,21 @@ class GenomicIndex(object):
         return self._trees
 
     def _build_trees(self):
-        # Subset frame to positions and rename columns to defaults.
-        position_df = self._df[[
-            self._chrom_col, self._start_col, self._end_col
-        ]]
-        position_df.columns = ['chromosome', 'start', 'end']
+        # Determine positions.
+        if self._use_index:
+            chromosomes = self._df.index.get_level_values(0)
+            starts = self._df.index.get_level_values(1)
+            ends = self._df.index.get_level_values(2)
+        else:
+            chromosomes = self._df[self._chrom_col]
+            starts = self._df[self._start_col]
+            ends = self._df[self._end_col]
+
+        position_df = pd.DataFrame({
+            'chromosome': chromosomes,
+            'start': starts,
+            'end': ends
+        })
 
         # Add index and sort by chromosome (for grouping).
         position_df = position_df.assign(index=np.arange(len(self._df)))
@@ -220,6 +349,19 @@ class GenomicIndex(object):
         indices = [interval[2] for interval in overlap]
 
         return self._df.iloc[indices].sort_index()
+
+    def subset(self, chromosomes):
+        """Subsets dataframe to given chromosomes."""
+
+        if self._use_index:
+            df_sorted = self._df.sort_index()
+            df_subset = df_sorted.reindex(index=chromosomes, level=0)
+        else:
+            df_indexed = self._df.set_index(self.chromosome_col)
+            df_subset = df_indexed.reindex(index=chromosomes)
+            df_subset = df_subset[self._df.columns]
+
+        return df_subset
 
 
 def reorder_columns(df, order):
