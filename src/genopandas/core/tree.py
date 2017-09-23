@@ -73,6 +73,7 @@ class GenomicIntervalTree(collections.MutableMapping):
         """
 
         # Group by chromosome.
+        tuples = sorted(tuples, key=operator.itemgetter(0))
         groups = itertools.groupby(tuples, key=operator.itemgetter(0))
 
         # Build trees.

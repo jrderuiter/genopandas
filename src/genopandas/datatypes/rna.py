@@ -1,6 +1,6 @@
 import numpy as np
 
-from .model.matrix import FeatureMatrix
+from genopandas.core.matrix import FeatureMatrix
 
 
 class ExpressionMatrix(FeatureMatrix):
@@ -26,6 +26,7 @@ class ExpressionMatrix(FeatureMatrix):
             design=design,
             drop_cols=['Chr', 'Start', 'End', 'Strand', 'Length'],
             name_map=name_map,
+            index_col=0,
             sep='\t',
             **kwargs)
 

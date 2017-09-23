@@ -2,7 +2,6 @@
 
 from collections import OrderedDict
 
-from natsort import natsorted
 import numpy as np
 import pandas as pd
 
@@ -72,9 +71,9 @@ class GenomicDataFrame(pd.DataFrame):
 
     @property
     def gi(self):
-        """Genomic index for querying the dataframe."""
+        """Genomic indexer for querying the dataframe."""
         if self._gi is None:
-            self._gi = GenomicIndex(self, **self._gi_metadata)
+            self._gi = GenomicIndexer(self, **self._gi_metadata)
         return self._gi
 
     @property
@@ -91,12 +90,13 @@ class GenomicDataFrame(pd.DataFrame):
                  chrom_lengths=None,
                  **kwargs):
         data = pd.DataFrame.from_csv(file_path, **kwargs)
-        return cls(data,
-                   use_index=use_index,
-                   chromosome_col=chromosome_col,
-                   start_col=start_col,
-                   end_col=end_col,
-                   chrom_lengths=chrom_lengths)
+        return cls(
+            data,
+            use_index=use_index,
+            chromosome_col=chromosome_col,
+            start_col=start_col,
+            end_col=end_col,
+            chrom_lengths=chrom_lengths)
 
     @classmethod
     def from_gtf(cls, gtf_path, filter_=None):
@@ -137,7 +137,7 @@ class GenomicDataFrame(pd.DataFrame):
         # Reorder columns to correspond with GTF format.
         columns = ('contig', 'source', 'feature', 'start', 'end', 'score',
                    'strand', 'frame')
-        data = reorder_columns(data, order=columns)
+        data = _reorder_columns(data, order=columns)
 
         return data
 
@@ -160,8 +160,8 @@ class GenomicDataFrame(pd.DataFrame):
         return cls(df, **kwargs)
 
 
-class GenomicIndex(object):
-    """Index class used to index GenomicDataFrames."""
+class GenomicIndexer(object):
+    """Indexer class used to index GenomicDataFrames."""
 
     def __init__(self,
                  df,
@@ -178,7 +178,8 @@ class GenomicIndex(object):
         else:
             for col in [chromosome_col, start_col, end_col]:
                 if col not in df.columns:
-                    raise ValueError('Column {!r} not in dataframe'.format(col))
+                    raise ValueError(
+                        'Column {!r} not in dataframe'.format(col))
 
         self._df = df
         self._use_index = use_index
@@ -300,36 +301,11 @@ class GenomicIndex(object):
         """Trees used for indexing the DataFrame."""
 
         if self._trees is None:
-            self._trees = self._build_trees()
+            tuples = zip(self.chromosome, self.start, self.end,
+                         range(self._df.shape[0]))
+            self._trees = GenomicIntervalTree.from_tuples(tuples)
 
         return self._trees
-
-    def _build_trees(self):
-        # Determine positions.
-        if self._use_index:
-            chromosomes = self._df.index.get_level_values(0)
-            starts = self._df.index.get_level_values(1)
-            ends = self._df.index.get_level_values(2)
-        else:
-            chromosomes = self._df[self._chrom_col]
-            starts = self._df[self._start_col]
-            ends = self._df[self._end_col]
-
-        position_df = pd.DataFrame({
-            'chromosome': chromosomes,
-            'start': starts,
-            'end': ends
-        })
-
-        # Add index and sort by chromosome (for grouping).
-        position_df = position_df.assign(index=np.arange(len(self._df)))
-        position_df = position_df.sort_values(by='chromosome')
-
-        # Convert to tuples.
-        tuples = ((tup.chromosome, tup.start, tup.end, tup.index)
-                  for tup in position_df.itertuples())
-
-        return GenomicIntervalTree.from_tuples(tuples)
 
     def search(self,
                chromosome,
@@ -364,7 +340,7 @@ class GenomicIndex(object):
         return df_subset
 
 
-def reorder_columns(df, order):
+def _reorder_columns(df, order):
     """Reorders dataframe columns, sorting any extra columns alphabetically."""
 
     extra_cols = set(df.columns) - set(order)

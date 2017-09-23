@@ -1,12 +1,11 @@
+"""Module containing additional functions for drawing clustermaps."""
+
 from collections import OrderedDict
 from itertools import cycle, islice
 
-from matplotlib import patches as mpl_patches
 import pandas as pd
-import seaborn as sns
 
-NUMERICAL_CMAPS = ('viridis', 'magma', 'plasma', 'inferno')
-CATEGORICAL_COLORS = tuple(sns.color_palette())
+from .constants import NUMERICAL_CMAPS, CATEGORICAL_COLORS
 
 
 def color_annotation(df, colors=None, bg_color='#ffffff'):
@@ -153,17 +152,18 @@ def draw_legends(cm, color_maps, margin=1, y=0.6, **kwargs):
 
 
 def _draw_legend(fig, color_map, **kwargs):
-    patches = [
-        mpl_patches.Patch(color=color, label=label)
-        for label, color in color_map.items()
-    ]
+    from matplotlib.patches import Patch
+
+    patches = [Patch(color=color, label=label)
+               for label, color in color_map.items()]  # yapf: disable
+
     return fig.legend(patches, color_map.keys(), **kwargs)
 
 
 def _resize_to_fit_legends(fig, legends, labels, margin=0.5):
     legend_width = max(l.get_window_extent().width for l in legends) / fig.dpi
 
-    if len(labels) > 0:
+    if labels:
         label_width = max(l.get_window_extent().width
                           for l in labels) / fig.dpi
     else:

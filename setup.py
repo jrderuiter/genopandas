@@ -3,9 +3,7 @@
 
 from setuptools import setup, find_packages
 
-REQUIREMENTS = [
-    'intervaltree', 'pandas', 'numpy', 'natsort', 'matplotlib', 'seaborn'
-]
+REQUIREMENTS = ['intervaltree', 'pandas', 'numpy']
 
 setup(
     name='genopandas',
@@ -25,5 +23,4 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3.5',
-    ]
-)
+    ])

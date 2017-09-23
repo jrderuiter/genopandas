@@ -1,29 +1,15 @@
-import re
-
-import pandas as pd
-
-
-REGION_REGEX = re.compile(r'(?P<chromosome>\w+):(?P<start>\d+)-(?P<end>\d+)')
+def with_defaults(kws, defaults):
+    """Returns merged dict with defaults for missing values."""
+    return {**defaults, **(kws or {})}
 
 
-def expand_region_index(df,
-                        regex=REGION_REGEX,
-                        names=('chromosome', 'start', 'end')):
+def lookup(mapping, key, label='key'):
+    """Looks-up key in dict, raising a readable exception if not found."""
 
-    regions = [parse_region_str(i, regex=regex) for i in df.index]
+    try:
+        value = mapping[key]
+    except KeyError:
+        raise ValueError('Unknown {} type: {}. Valid values are {}'
+                         .format(label, key, list(mapping.keys())))
 
-    expanded = df.copy()
-    expanded.index = pd.MultiIndex.from_tuples(regions, names=names)
-
-    return expanded
-
-
-def parse_region_str(region_str, regex):
-    match = regex.search(region_str)
-
-    if match is None:
-        raise ValueError('Unable to parse region {!r}'.format(region_str))
-
-    groups = match.groupdict()
-
-    return (groups['chromosome'], int(groups['start']), int(groups['end']))
+    return value

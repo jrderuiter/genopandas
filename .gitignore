@@ -61,3 +61,4 @@ target/
 # User-defined
 .DS_Store
 .vscode
+/.mypy_cache
