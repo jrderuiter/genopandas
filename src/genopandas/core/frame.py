@@ -172,24 +172,45 @@ class GenomicIndexer(object):
                  lengths=None):
 
         if use_index:
-            if df.index.nlevels != 3:
-                raise ValueError('Dataframe index does not have three levels '
-                                 '(chromosome, start, end)')
+            if not 2 <= df.index.nlevels <= 3:
+                raise ValueError('Dataframe index does not have the required '
+                                 'number of levels')
         else:
-            for col in [chromosome_col, start_col, end_col]:
+            if end_col is None:
+                req_columns = [chromosome_col, start_col]
+            else:
+                req_columns = [chromosome_col, start_col, end_col]
+
+            for col in req_columns:
                 if col not in df.columns:
                     raise ValueError(
                         'Column {!r} not in dataframe'.format(col))
 
-        self._df = df
-        self._use_index = use_index
+        if use_index:
+            chromosomes = df.index.get_level_values(0).values
+            starts = df.index.get_level_values(1).values
 
-        self._chrom_col = chromosome_col
-        self._start_col = start_col
-        self._end_col = end_col
+            if df.index.nlevels == 3:
+                ends = df.index.get_level_values(2).values
+            else:
+                ends = starts + 1
+        else:
+            chromosomes = df[chromosome_col].values
+            starts = df[start_col].values
+            ends = df[end_col].values if end_col else starts + 1
+
+        self._df = df
         self._lengths = lengths
 
+        self._chromosome = chromosomes
+        self._start = starts
+        self._end = ends
+
         self._trees = None
+
+    def __getitem__(self, item):
+        mask = self._chromosome == item
+        return self._df.loc[mask]
 
     @property
     def df(self):
@@ -199,20 +220,18 @@ class GenomicIndexer(object):
     @property
     def chromosome(self):
         """Chromosome values."""
-        if self._use_index:
-            return pd.Series(self._df.index.get_level_values(0))
-        return self._df[self._chrom_col]
+        return self._chromosome
 
     @property
     def chromosomes(self):
         """Available chromosomes."""
-        return list(self.chromosome.unique())
+        return list(np.unique(self._chromosome))
 
     @property
     def chromosome_lengths(self):
         """Chromosome lengths."""
         if self._lengths is None:
-            lengths = self.end.groupby(self.chromosome).max()
+            lengths = pd.Series(self.end).groupby(self.chromosome).max()
             self._lengths = dict(zip(lengths.index, lengths.values))
         return {
             k: v
@@ -241,60 +260,26 @@ class GenomicIndexer(object):
     @property
     def start(self):
         """Start positions."""
-        if self._use_index:
-            return pd.Series(self._df.index.get_level_values(1))
-        return self._df[self._start_col]
+        return self._start
 
     @property
     def start_offset(self):
         """Start positions, offset by chromosome lengths."""
+        return self._offset_positions(self.start)
 
+    def _offset_positions(self, positions):
         offsets = pd.Series(self.chromosome_offsets)
-        return self.start + offsets.loc[self.chromosome].values
+        return positions + offsets.loc[self.chromosome].values
 
     @property
     def end(self):
         """End positions."""
-        if self._use_index:
-            return pd.Series(self._df.index.get_level_values(2))
-        return self._df[self._end_col]
+        return self._end
 
     @property
     def end_offset(self):
         """End positions, offset by chromosome lengths."""
-
-        offsets = pd.Series(self.chromosome_offsets)
-        return self.end + offsets.loc[self.chromosome].values
-
-    @property
-    def chromosome_col(self):
-        """Chromosome column name."""
-
-        if self._use_index:
-            raise ValueError('Chromosome is in the index and cannot '
-                             'be referred to by column name')
-
-        return self._chrom_col
-
-    @property
-    def start_col(self):
-        """Start column name."""
-
-        if self._use_index:
-            raise ValueError('Start is in the index and cannot '
-                             'be referred to by column name')
-
-        return self._start_col
-
-    @property
-    def end_col(self):
-        """End column name."""
-
-        if self._use_index:
-            raise ValueError('End is in the index and cannot '
-                             'be referred to by column name')
-
-        return self._end_col
+        return self._offset_positions(self.end)
 
     @property
     def trees(self):
@@ -325,19 +310,6 @@ class GenomicIndexer(object):
         indices = [interval[2] for interval in overlap]
 
         return self._df.iloc[indices].sort_index()
-
-    def subset(self, chromosomes):
-        """Subsets dataframe to given chromosomes."""
-
-        if self._use_index:
-            df_sorted = self._df.sort_index()
-            df_subset = df_sorted.reindex(index=chromosomes, level=0)
-        else:
-            df_indexed = self._df.set_index(self.chromosome_col)
-            df_subset = df_indexed.reindex(index=chromosomes)
-            df_subset = df_subset[self._df.columns]
-
-        return df_subset
 
 
 def _reorder_columns(df, order):
