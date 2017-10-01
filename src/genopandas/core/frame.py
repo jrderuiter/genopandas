@@ -1,10 +1,12 @@
 """Dataframe-related functions/classes."""
 
 from collections import OrderedDict
+import math
 
 import numpy as np
 import pandas as pd
 
+from genopandas.util import reorder_columns
 from .tree import GenomicIntervalTree
 
 
@@ -50,31 +52,18 @@ class GenomicDataFrame(pd.DataFrame):
 
     _metadata = ['_gi_metadata']
 
-    def __init__(self,
-                 *args,
-                 use_index=False,
-                 chromosome_col='chromosome',
-                 start_col='start',
-                 end_col='end',
-                 chrom_lengths=None,
-                 **kwargs):
+    def __init__(self, *args, chrom_lengths=None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._gi = None
-        self._gi_metadata = {
-            'use_index': use_index,
-            'chromosome_col': chromosome_col,
-            'start_col': start_col,
-            'end_col': end_col,
-            'lengths': chrom_lengths
-        }
+        self._gloc = None
+        self._gloc_metadata = {'chrom_lengths': chrom_lengths}
 
     @property
-    def gi(self):
+    def gloc(self):
         """Genomic indexer for querying the dataframe."""
-        if self._gi is None:
-            self._gi = GenomicIndexer(self, **self._gi_metadata)
-        return self._gi
+        if self._gloc is None:
+            self._gloc = GenomicIndexer.from_df(self, **self._gloc_metadata)
+        return self._gloc
 
     @property
     def _constructor(self):
@@ -83,44 +72,59 @@ class GenomicDataFrame(pd.DataFrame):
     @classmethod
     def from_csv(cls,
                  file_path,
-                 use_index=False,
-                 chromosome_col='chromosome',
-                 start_col='start',
-                 end_col='end',
+                 index_col=None,
+                 drop_index_col=True,
                  chrom_lengths=None,
                  **kwargs):
-        data = pd.DataFrame.from_csv(file_path, **kwargs)
-        return cls(
-            data,
-            use_index=use_index,
-            chromosome_col=chromosome_col,
-            start_col=start_col,
-            end_col=end_col,
-            chrom_lengths=chrom_lengths)
+        """Creates a GenomicDataFrame from a csv file using ``pandas.read_csv``.
+
+        Parameters
+        ----------
+        file_path : str
+            Path to file.
+        index_col : List[str] or List[int]
+            Columns to use for index. Columns can be indicated by their name
+            (str) or index (int). Should contain two entries for positioned
+            data, three entries for ranged data. If not given, the first three
+            columns of the DataFrame are used by default.
+        drop_index_col : bool
+            Whether to drop the index columns in the DataFrame (True, default)
+            or to drop them from the dataframe (False).
+        chrom_lengths : Dict[str, int]
+            Chromosomes sizes to use in the genomic index.
+        **kwargs
+            Any extra kwargs are passed to ``pandas.read_csv``.
+
+        Returns
+        -------
+        GenomicDataFrame
+            DataFrame containing the file contents.
+
+        """
+
+        data = pd.read_csv(file_path, index_col=None, **kwargs)
+
+        if index_col is None:
+            index_col = list(data.columns[:3])
+        elif isinstance(index_col[0], int):
+            index_col = [data.columns[i] for i in index_col]
+
+        # Convert chromosome to str.
+        data[index_col[0]] = data[index_col[0]].astype(str)
+
+        data = data.set_index(index_col, drop=drop_index_col)
+
+        return cls(data, chrom_lengths=chrom_lengths)
 
     @classmethod
     def from_gtf(cls, gtf_path, filter_=None):
-        """Build a GenomicDataFrame from a GTF file."""
+        """Creates a GenomicDataFrame from a GTF file."""
 
         try:
             import pysam
         except ImportError:
             raise ImportError('Pysam needs to be installed for '
                               'reading GTF files')
-
-        def _record_to_row(record):
-            row = {
-                'contig': record.contig,
-                'source': record.source,
-                'feature': record.feature,
-                'start': int(record.start),
-                'end': int(record.end),
-                'score': record.score,
-                'strand': record.strand,
-                'frame': record.frame
-            }
-            row.update(dict(record))
-            return row
 
         # Parse records into rows.
         gtf_file = pysam.TabixFile(str(gtf_path), parser=pysam.asGTF())
@@ -131,112 +135,170 @@ class GenomicDataFrame(pd.DataFrame):
             records = (rec for rec in records if filter_(rec))
 
         # Build dataframe.
-        rows = (_record_to_row(rec) for rec in records)
-        data = cls(pd.DataFrame.from_records(rows), chromosome_col='contig')
+        def _record_to_row(record):
+            row = {
+                'contig': record.contig,
+                'source': record.source,
+                'feature': record.feature,
+                'start': record.start,
+                'end': record.end,
+                'score': record.score,
+                'strand': record.strand,
+                'frame': record.frame
+            }
+            row.update(dict(record))
+            return row
+
+        gdf = cls.from_records(
+            (_record_to_row(rec) for rec in records),
+            index_col=['contig', 'start', 'end'],
+            drop_index_col=False)
 
         # Reorder columns to correspond with GTF format.
         columns = ('contig', 'source', 'feature', 'start', 'end', 'score',
                    'strand', 'frame')
-        data = _reorder_columns(data, order=columns)
+        gdf = reorder_columns(gdf, order=columns)
 
-        return data
+        return gdf
 
     @classmethod
-    def from_position_df(cls, df, position_col='position', width=0, **kwargs):
-        """Builds a GenomicDataFrame from a dataframe with positions."""
+    def from_records(cls,
+                     data,
+                     index_col,
+                     columns=None,
+                     drop_index_col=True,
+                     **kwargs):
+        """Creates a GenomicDataFrame from a structured or record ndarray."""
 
-        # Note: end is exclusive.
-        start_col = kwargs.get('start_col', 'start')
-        end_col = kwargs.get('end_col', 'end')
+        if not 2 <= len(index_col) <= 3:
+            raise ValueError('index_col should contain 2 entries'
+                             ' (for positioned data or 3 entries'
+                             ' (for ranged data)')
 
-        half_width = width // 2
-        df = df.assign(**{
-            start_col: df[position_col] - half_width,
-            end_col: (df[position_col] - half_width) + 1
-        })
+        df = super().from_records(data, columns=columns, **kwargs)
+        df = df.set_index(index_col, drop=drop_index_col)
 
-        df = df.drop(position_col, axis=1)
+        return df
 
-        return cls(df, **kwargs)
+    @property
+    def is_positioned(self):
+        """Returns true if dataframe is positioned."""
+        return self.index.nlevels == 2
+
+    @property
+    def is_ranged(self):
+        """Returns true if dataframe is ranged."""
+        return self.index.nlevels == 3
+
+    def as_positioned(self):
+        """Converts a ranged frame (with starts/ends in the index) to a
+           positioned df (with single positions in the index)."""
+
+        if self.is_positioned:
+            return self.copy()
+
+        chromosomes = self.index.get_level_values(0)
+        starts = self.index.get_level_values(1)
+        ends = self.index.get_level_values(2)
+
+        positions = (starts + ends) // 2
+
+        names = [self.index.names[0], 'position']
+        new_index = pd.MultiIndex.from_arrays(
+            [chromosomes, positions], names=names)
+
+        new_df = self.copy()
+        new_df.index = new_index
+
+        return new_df
+
+    def as_ranged(self, width=1):
+        """Converts a positioned frame (with positions in the index)
+           to a ranged df (with starts/ends in the index)."""
+
+        if not self.is_positioned:
+            raise ValueError('Only positioned frames can be '
+                             'converted to a ranged frame')
+
+        chromosomes = self.index.get_level_values(0)
+        positions = self.index.get_level_values(1)
+
+        starts = positions - (width // 2)
+        ends = positions + math.ceil(width / 2)
+
+        names = [self.index.names[0], 'start', 'end']
+        new_index = pd.MultiIndex.from_arrays(
+            [chromosomes, starts, ends], names=names)
+
+        new_df = self.copy()
+        new_df.index = new_index
+
+        return new_df
 
 
 class GenomicIndexer(object):
-    """Indexer class used to index GenomicDataFrames."""
+    """Base GenomicIndexer class used to index GenomicDataFrames."""
 
-    def __init__(self,
-                 df,
-                 use_index=False,
-                 chromosome_col='chromosome',
-                 start_col='start',
-                 end_col='end',
-                 lengths=None):
-
-        if use_index:
-            if not 2 <= df.index.nlevels <= 3:
-                raise ValueError('Dataframe index does not have the required '
-                                 'number of levels')
-        else:
-            if end_col is None:
-                req_columns = [chromosome_col, start_col]
-            else:
-                req_columns = [chromosome_col, start_col, end_col]
-
-            for col in req_columns:
-                if col not in df.columns:
-                    raise ValueError(
-                        'Column {!r} not in dataframe'.format(col))
-
-        if use_index:
-            chromosomes = df.index.get_level_values(0).values
-            starts = df.index.get_level_values(1).values
-
-            if df.index.nlevels == 3:
-                ends = df.index.get_level_values(2).values
-            else:
-                ends = starts + 1
-        else:
-            chromosomes = df[chromosome_col].values
-            starts = df[start_col].values
-            ends = df[end_col].values if end_col else starts + 1
-
+    def __init__(self, df, chrom_lengths=None):
         self._df = df
-        self._lengths = lengths
-
-        self._chromosome = chromosomes
-        self._start = starts
-        self._end = ends
+        self._lengths = chrom_lengths
 
         self._trees = None
 
     def __getitem__(self, item):
-        mask = self._chromosome == item
-        return self._df.loc[mask]
+        """Accessor used to query the dataframe by position.
+
+        If a list of chromosomes is given, the dataframe is subset to the
+        given chromosomes. Note that chromosomes are also re-ordered to
+        adhere to the given order. If a single chromosome is given, a
+        GenomicSlice is returned. This slice object can be sliced to query
+        a specific genomic range.
+        """
+
+        if isinstance(item, list):
+            return self._df.reindex(index=[item], level=0)
+
+        return GenomicSlice(self, chromosome=item)
+
+    @classmethod
+    def from_df(cls, df, chrom_lengths=None):
+        """Constructs the appropriate indexer sub-class for the given frame."""
+
+        if df.index.nlevels == 3:
+            return GenomicRangeIndexer(df, chrom_lengths=chrom_lengths)
+        elif df.index.nlevels == 2:
+            return GenomicPositionIndexer(df, chrom_lengths=chrom_lengths)
+        else:
+            raise ValueError('DataFrame index should contain two levels '
+                             '(for positional data) or three levels '
+                             '(for ranged data)')
 
     @property
     def df(self):
-        """The indexed dataframe."""
+        """The indexed DataFrame."""
         return self._df
 
     @property
     def chromosome(self):
         """Chromosome values."""
-        return self._chromosome
+        return self._df.index.get_level_values(0)
 
     @property
     def chromosomes(self):
         """Available chromosomes."""
-        return list(np.unique(self._chromosome))
+        return list(self.chromosome.unique())
 
     @property
     def chromosome_lengths(self):
         """Chromosome lengths."""
+
         if self._lengths is None:
-            lengths = pd.Series(self.end).groupby(self.chromosome).max()
-            self._lengths = dict(zip(lengths.index, lengths.values))
-        return {
-            k: v
-            for k, v in self._lengths.items() if k in set(self.chromosomes)
-        }
+            self._lengths = self._calculate_lengths()
+
+        return self._lengths
+
+    def _calculate_lengths(self):
+        raise NotImplementedError()
 
     @property
     def chromosome_offsets(self):
@@ -257,52 +319,37 @@ class GenomicIndexer(object):
 
         return offsets
 
-    @property
-    def start(self):
-        """Start positions."""
-        return self._start
-
-    @property
-    def start_offset(self):
-        """Start positions, offset by chromosome lengths."""
-        return self._offset_positions(self.start)
-
     def _offset_positions(self, positions):
         offsets = pd.Series(self.chromosome_offsets)
         return positions + offsets.loc[self.chromosome].values
-
-    @property
-    def end(self):
-        """End positions."""
-        return self._end
-
-    @property
-    def end_offset(self):
-        """End positions, offset by chromosome lengths."""
-        return self._offset_positions(self.end)
 
     @property
     def trees(self):
         """Trees used for indexing the DataFrame."""
 
         if self._trees is None:
-            tuples = zip(self.chromosome, self.start, self.end,
-                         range(self._df.shape[0]))
-            self._trees = GenomicIntervalTree.from_tuples(tuples)
+            self._trees = self._build_trees()
 
         return self._trees
 
+    def rebuild(self):
+        """Rebuilds the genomic interval trees."""
+        self._trees = self._build_trees()
+
+    def _build_trees(self):
+        raise NotImplementedError()
+
     def search(self,
                chromosome,
-               begin,
+               start,
                end,
                strict_left=False,
                strict_right=False):
-        """Subsets the DataFrame for rows within given range."""
+        """Searches the DataFrame for rows within given range."""
 
         overlap = self.trees.search(
             chromosome,
-            begin,
+            start,
             end,
             strict_left=strict_left,
             strict_right=strict_right)
@@ -312,8 +359,86 @@ class GenomicIndexer(object):
         return self._df.iloc[indices].sort_index()
 
 
-def _reorder_columns(df, order):
-    """Reorders dataframe columns, sorting any extra columns alphabetically."""
+class GenomicSlice(object):
+    """Supporting class used by the GenomicIndexer for slicing chromosomes."""
 
-    extra_cols = set(df.columns) - set(order)
-    return df[list(order) + sorted(extra_cols)]
+    def __init__(self, indexer, chromosome):
+        self._indexer = indexer
+        self._chromosome = chromosome
+
+    def __getitem__(self, item):
+        if isinstance(item, slice):
+            return self._indexer.search(
+                self._chromosome, start=item.start, end=item.stop)
+        return self._indexer.search(self._chromosome, start=item)
+
+
+class GenomicRangeIndexer(GenomicIndexer):
+    """GenomicIndexer class for querying ranged (start/end) data."""
+
+    def __init__(self, df, chrom_lengths=None):
+
+        if not df.index.nlevels == 3:
+            raise ValueError('Dataframe must have three levels')
+
+        super().__init__(df, chrom_lengths=chrom_lengths)
+
+    @property
+    def start(self):
+        """Start positions."""
+        return self._df.index.get_level_values(1)
+
+    @property
+    def start_offset(self):
+        """Start positions, offset by chromosome lengths."""
+        return self._offset_positions(self.start)
+
+    @property
+    def end(self):
+        """End positions."""
+        return self._df.index.get_level_values(2)
+
+    @property
+    def end_offset(self):
+        """End positions, offset by chromosome lengths."""
+        return self._offset_positions(self.end)
+
+    def _calculate_lengths(self):
+        lengths = pd.Series(self.end).groupby(self.chromosome).max()
+        return dict(zip(lengths.index, lengths.values))
+
+    def _build_trees(self):
+        tuples = zip(self.chromosome, self.start, self.end,
+                     range(self._df.shape[0]))
+        return GenomicIntervalTree.from_tuples(tuples)
+
+
+class GenomicPositionIndexer(GenomicIndexer):
+    """GenomicIndexer class for querying positioned (single position) data."""
+
+    def __init__(self, df, chrom_lengths=None):
+
+        if not df.index.nlevels == 2:
+            raise ValueError('Dataframe must have two levels')
+
+        super().__init__(df, chrom_lengths=chrom_lengths)
+
+    @property
+    def position(self):
+        """Positions."""
+        return self._df.index.get_level_values(1)
+
+    @property
+    def position_offset(self):
+        """Positions, offset by chromosome lengths."""
+        return self._offset_positions(self.position)
+
+    def _calculate_lengths(self):
+        lengths = pd.Series(self.position).groupby(self.chromosome).max()
+        return dict(zip(lengths.index, lengths.values))
+
+    def _build_trees(self):
+        positions = self.position
+        tuples = zip(self.chromosome, positions, positions + 1,
+                     range(self._df.shape[0]))
+        return GenomicIntervalTree.from_tuples(tuples)

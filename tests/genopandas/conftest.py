@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
 
+import numpy as np
+import random as rand
+
 pytest_plugins = ['helpers_namespace']
 
 import pytest
@@ -24,3 +27,9 @@ def data_path(relative_path, relative_to=None):
         relative_to = relative_to.parent
 
     return relative_to / 'data' / relative_path
+
+
+@pytest.fixture
+def random():
+    rand.seed(0)
+    np.random.seed(0)

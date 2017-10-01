@@ -1,3 +1,4 @@
+import functools
 from itertools import chain, cycle
 from operator import attrgetter
 import re
@@ -10,9 +11,9 @@ from pandas.api.types import is_numeric_dtype
 from genopandas.plotting.genomic import plot_genomic
 from genopandas.plotting.clustermap import color_annotation, draw_legends
 from genopandas.plotting.seaborn import scatter
-from genopandas.util import with_defaults, lookup
+from genopandas.util import with_defaults, lookup, expand_index
 
-from .frame import GenomicDataFrame
+from .frame import GenomicDataFrame, GenomicSlice
 
 
 class AnnotatedMatrix(object):
@@ -20,7 +21,7 @@ class AnnotatedMatrix(object):
 
     Annotated matrix classes respresent 2D numeric feature-by-sample matrices
     (with 'features' along the rows and samples along the columns), which can
-    be annotated with an optional 'design' frame that describes the respective
+    be annotated with an optional sample_data frame that describes the
     samples. The type of feature varies between different sub-classes, examples
     being genes (for gene expression matrices) and region-based bins (for
     copy-number data).
@@ -39,8 +40,8 @@ class AnnotatedMatrix(object):
     ----------
     values : pd.DataFrame
         Matrix values.
-    design : pd.DataFrame
-        Sample design.
+    sample_data : pd.DataFrame
+        Sample data.
     samples : list[str]
         List of samples in the matrix (along the columns).
     features : list[Any]
@@ -56,7 +57,7 @@ class AnnotatedMatrix(object):
 
     """
 
-    def __init__(self, values, design=None):
+    def __init__(self, values, sample_data=None):
         """Constructs an AnnotatedMatrix instance.
 
         Parameters
@@ -64,23 +65,30 @@ class AnnotatedMatrix(object):
         values : pd.DataFrame
             Numeric dataframe (matrix) with features along the rows
             and samples along the columns.
-        design : pd.DataFrame
-            Sample design, with sample names in the index. Sample names
+        sample_data : pd.DataFrame
+            Sample data, with sample names in the index. Sample names
             should correspond with the columns of the matrix value frame.
         """
-        assert design is None or (values.shape[1] == design.shape[0]
-                                  and all(values.columns == design.index))
+        assert sample_data is None or (
+            values.shape[1] == sample_data.shape[0]
+            and all(values.columns == sample_data.index))
 
         # Check if all columns are numeric.
         for col_name, col_values in values.items():
             if not is_numeric_dtype(col_values):
                 raise ValueError('Column {} is not numeric'.format(col_name))
 
-        if design is None:
-            design = pd.DataFrame({}, index=values.columns)
+        if sample_data is None:
+            sample_data = pd.DataFrame({}, index=values.columns)
 
         self._values = values
-        self._design = design
+        self._sample_data = sample_data
+
+    def __eq__(self, other):
+        if not isinstance(other, GenomicMatrix):
+            return False
+        return all(self.values == other.values) and \
+            all(self.sample_data == other.sample_data)
 
     @property
     def values(self):
@@ -88,9 +96,14 @@ class AnnotatedMatrix(object):
         return self._values
 
     @property
-    def design(self):
-        """Matrix design (sample annotation)."""
-        return self._design
+    def shape(self):
+        """Matrix shape."""
+        return self._values.shape
+
+    @property
+    def sample_data(self):
+        """Sample data."""
+        return self._sample_data
 
     @property
     def samples(self):
@@ -104,17 +117,22 @@ class AnnotatedMatrix(object):
 
     @property
     def loc(self):
-        """Label based indexer (similar to pandas .loc)."""
+        """Label-based indexer (similar to pandas .loc)."""
+        return LocWrapper(self._values.loc, constructor=self._loc_constructor)
 
-        return LocIndexer(self)
-
-    def _loc(self, item):
-        values = self._values.loc[item]
+    def _loc_constructor(self, values):
+        """Constructor used by LocWrapper."""
 
         if len(values.shape) != 2:
             return values
 
-        return self.__class__(values.copy(), design=self._design.copy())
+        return self.__class__(
+            values.copy(), sample_data=self._sample_data.copy())
+
+    @property
+    def iloc(self):
+        """Index-based indexer (similar to pandas .iloc)."""
+        return LocWrapper(self._values.iloc, constructor=self._loc_constructor)
 
     def __getitem__(self, item):
         values = self._values[item]
@@ -122,8 +140,40 @@ class AnnotatedMatrix(object):
         if len(values.shape) != 2:
             return values
 
-        design = self._design.reindex(index=item)
-        return self.__class__(values.copy(), design=design)
+        sample_data = self._sample_data.reindex(index=item)
+        return self.__class__(values.copy(), sample_data=sample_data)
+
+    @classmethod
+    def from_csv(cls,
+                 file_path,
+                 sample_data=None,
+                 drop_cols=None,
+                 index_col=None,
+                 **kwargs):
+
+        if index_col is None:
+            index_col = 0
+
+        values = pd.read_csv(file_path, index_col=index_col, **kwargs)
+
+        values = cls._preprocess_values(
+            values, sample_data=sample_data, drop_cols=drop_cols)
+
+        return cls(values, sample_data=sample_data)
+
+    @staticmethod
+    def _preprocess_values(values, sample_data=None, drop_cols=None):
+        """Preprocesses values to match to sample_data and drop any extra
+           (non-numeric) columns.
+        """
+
+        if drop_cols is not None:
+            values = values.drop(drop_cols, axis=1)
+
+        if sample_data is not None:
+            values = values[sample_data.index]
+
+        return values
 
     def rename(self, mapping, drop=False):
         """Renames samples using given mapping.
@@ -146,10 +196,10 @@ class AnnotatedMatrix(object):
 
         renamed = self._rename(self._values, mapping, drop=drop)
 
-        design = self._design.rename(index=mapping)
-        design = design.reindex(index=renamed.columns)
+        sample_data = self._sample_data.rename(index=mapping)
+        sample_data = sample_data.reindex(index=renamed.columns)
 
-        return self.__class__(renamed, design=design)
+        return self.__class__(renamed, sample_data=sample_data)
 
     @staticmethod
     def _rename(df, name_map, drop=False):
@@ -162,10 +212,10 @@ class AnnotatedMatrix(object):
         return renamed
 
     def query(self, expr):
-        """Subsets samples in matrix by querying design with given expression.
+        """Subsets samples in matrix by querying sample_data with expression.
 
-        Similar to the pandas ``query`` method, this method queries the design
-        frame of the matrix with the given boolean expression. Any samples for
+        Similar to the pandas ``query`` method, this method queries the sample
+        data of the matrix with the given boolean expression. Any samples for
         which the expression evaluates to True are returned in the resulting
         AnnotatedMatrix.
 
@@ -182,85 +232,47 @@ class AnnotatedMatrix(object):
             evaluates to True.
 
         """
-        design = self._design.query(expr)
-        values = self._values.reindex(columns=design.index)
-        return self.__class__(values, design=design)
+        sample_data = self._sample_data.query(expr)
+        values = self._values.reindex(columns=sample_data.index)
+        return self.__class__(values, sample_data=sample_data)
 
     def dropna(self, subset=None, how='any', thresh=None):
-        design = self._design.dropna(subset=subset, how=how, thresh=thresh)
-        values = self._values.reindex(columns=design.index)
-        return self.__class__(values, design=design)
+        """Drops samples with NAs in sample_data."""
 
-    def dropna_values(self, how='any', thresh=None):
-        values = self._values.dropna(how=how, thresh=thresh)
-        return self.__class__(values, design=self._design.copy())
+        sample_data = self._sample_data.dropna(
+            subset=subset, how=how, thresh=thresh)
+        values = self._values.reindex(columns=sample_data.index)
+
+        return self.__class__(values, sample_data=sample_data)
+
+    def dropna_values(self, axis=0, how='any', thresh=None):
+        """Drops rows in the matrix that contain NAs."""
+
+        values = self._values.dropna(axis=axis, how=how, thresh=thresh)
+        sample_data = self._sample_data.reindex(index=values.columns)
+        return self.__class__(values, sample_data=sample_data)
 
     @classmethod
-    def concat(cls, matrices, axis='sample'):
-        if axis == 'sample':
-            value_axis, design_axis = 1, 0
-        elif axis == 'feature':
-            value_axis, design_axis = 0, 1
-        else:
-            raise ValueError('Unexpected value for axis ({}). Valid values '
-                             'are \'sample\' or \'feature\''.format(axis))
+    def concat(cls, matrices, axis=0):
+        """Concatenates two AnntotatedMatrices."""
+
+        # TODO: Check for overlapping samples?
+
+        assert 0 <= axis <= 1
+
+        value_axis, sample_axis = axis, 1 - axis
 
         values = pd.concat([mat.values for mat in matrices], axis=value_axis)
-        design = pd.concat([mat.design for mat in matrices], axis=design_axis)
+        sample_data = pd.concat(
+            [mat.sample_data for mat in matrices], axis=sample_axis)
 
-        return cls(values, design=design)
+        if any(values.columns.duplicated()):
+            raise ValueError('Matrices contain duplicate samples')
 
-    @classmethod
-    def from_csv(cls,
-                 file_path,
-                 design=None,
-                 name_map=None,
-                 drop_cols=None,
-                 index_col=None,
-                 **kwargs):
+        if any(values.index.duplicated()):
+            raise ValueError('Matrices contain duplicate features')
 
-        if index_col is None:
-            index_col = 0
-
-        values = cls._read_csv(
-            file_path,
-            index_col,
-            design=design,
-            name_map=name_map,
-            drop_cols=drop_cols,
-            **kwargs)
-
-        return cls(values, design=design)
-
-    @classmethod
-    def _read_csv(cls,
-                  file_path,
-                  index_col,
-                  design=None,
-                  name_map=None,
-                  drop_cols=None,
-                  **kwargs):
-        values = pd.read_csv(file_path, index_col=index_col, **kwargs)
-
-        if drop_cols is not None:
-            values = values.drop(drop_cols, axis=1)
-
-        values = cls._rename_and_match(
-            values, design=design, name_map=name_map)
-
-        return values
-
-    @classmethod
-    def _rename_and_match(cls, values, design=None, name_map=None):
-        """Optionally renames values and matches to design."""
-
-        if name_map is not None:
-            values = cls._rename(values, name_map, drop=True)
-
-        if design is not None:
-            values = values[design.index]
-
-        return values
+        return cls(values, sample_data=sample_data)
 
     def plot_heatmap(self,
                      cmap='RdBu_r',
@@ -271,14 +283,14 @@ class AnnotatedMatrix(object):
                      transpose=False,
                      legend_kws=None,
                      **kwargs):
-        """Plots (clustered) heatmap of values."""
+        """Plots clustered heatmap of matrix values."""
 
         import matplotlib.pyplot as plt
         import seaborn as sns
 
         if annotation is not None:
             annot_colors, annot_cmap = color_annotation(
-                self._design[annotation], colors=annotation_colors)
+                self._sample_data[annotation], colors=annotation_colors)
         else:
             annot_colors, annot_cmap = None, None
 
@@ -306,63 +318,6 @@ class AnnotatedMatrix(object):
 
         return cm
 
-
-class LocIndexer(object):
-    def __init__(self, obj):
-        self._obj = obj
-
-    def __getitem__(self, item):
-        return self._obj._loc(item)
-
-
-class FeatureMatrix(AnnotatedMatrix):
-    """Feature matrix class.
-
-    FeatureMatrices are 2D feature-by-sample matrices, in which the rows
-    contain measurements for specific (labeled) features across samples.
-    Examples are gene expression matrices, in which each row contains the
-    expression of a specific gene across different samples.
-    """
-
-    def __init__(self, values, design=None):
-        super().__init__(values, design=design)
-
-    def map_ids(self, mapper, **kwargs):
-        """Maps feature ids to a different identifier type using genemap."""
-
-        import genemap
-        mapped = genemap.map_dataframe(self._values, mapper=mapper, **kwargs)
-
-        return self.__class__(mapped, design=self._design)
-
-    def plot_feature(self, feature, group=None, kind='box', ax=None, **kwargs):
-        """Plots distribution of expression for given feature."""
-
-        import seaborn as sns
-
-        if group is not None and self._design is None:
-            raise ValueError('Grouping is not possible if no design is given')
-
-        # Determine plot type.
-        plot_funcs = {
-            'box': sns.boxplot,
-            'swarm': sns.swarmplot,
-            'violin': sns.violinplot
-        }
-        plot_func = lookup(plot_funcs, key=kind, label='plot')
-
-        # Assemble plot data (design + expression values).
-        values = self._values.loc[feature].to_frame(name='value')
-        plot_data = pd.concat([values, self.design], axis=1)
-
-        # Plot expression.
-        ax = plot_func(data=plot_data, x=group, y='value', ax=ax, **kwargs)
-
-        ax.set_title(feature)
-        ax.set_ylabel('Value')
-
-        return ax
-
     def plot_pca(self, components=(1, 2), ax=None, **kwargs):
         """Plots PCA of samples."""
 
@@ -384,7 +339,7 @@ class FeatureMatrix(AnnotatedMatrix):
             index=self.values.columns)
 
         # Assemble plot data.
-        plot_data = pd.concat([transform, self.design], axis=1)
+        plot_data = pd.concat([transform, self._sample_data], axis=1)
 
         # Draw using lmplot.
         pca_x, pca_y = ['pca_{}'.format(c) for c in components]
@@ -422,6 +377,70 @@ class FeatureMatrix(AnnotatedMatrix):
 
         return ax
 
+
+class LocWrapper(object):
+    """Wrapper class that wraps an objects loc/iloc accessor."""
+
+    def __init__(self, loc, constructor=None):
+        if constructor is None:
+            constructor = lambda x: x
+
+        self._loc = loc
+        self._constructor = constructor
+
+    def __getitem__(self, item):
+        result = self._loc[item]
+        return self._constructor(result)
+
+
+class FeatureMatrix(AnnotatedMatrix):
+    """Feature matrix class.
+
+    FeatureMatrices are 2D feature-by-sample matrices, in which the rows
+    contain measurements for specific (labeled) features across samples.
+    Examples are gene expression matrices, in which each row contains the
+    expression of a specific gene across different samples.
+    """
+
+    def __init__(self, values, sample_data=None):
+        super().__init__(values, sample_data=sample_data)
+
+    def map_ids(self, mapper, **kwargs):
+        """Maps feature ids to a different identifier type using genemap."""
+
+        import genemap
+        mapped = genemap.map_dataframe(self._values, mapper=mapper, **kwargs)
+
+        return self.__class__(mapped, sample_data=self._sample_data)
+
+    def plot_feature(self, feature, group=None, kind='box', ax=None, **kwargs):
+        """Plots distribution of expression for given feature."""
+
+        import seaborn as sns
+
+        if group is not None and self._sample_data is None:
+            raise ValueError('Grouping not possible if no sample_data given')
+
+        # Determine plot type.
+        plot_funcs = {
+            'box': sns.boxplot,
+            'swarm': sns.swarmplot,
+            'violin': sns.violinplot
+        }
+        plot_func = lookup(plot_funcs, key=kind, label='plot')
+
+        # Assemble plot data (sample_data + expression values).
+        values = self._values.loc[feature].to_frame(name='value')
+        plot_data = pd.concat([values, self._sample_data], axis=1)
+
+        # Plot expression.
+        ax = plot_func(data=plot_data, x=group, y='value', ax=ax, **kwargs)
+
+        ax.set_title(feature)
+        ax.set_ylabel('Value')
+
+        return ax
+
     def plot_correlation(self,
                          x,
                          y,
@@ -432,7 +451,7 @@ class FeatureMatrix(AnnotatedMatrix):
         """Plots correlation between the values of two features."""
 
         plot_data = self._values.T[[x, y]]
-        plot_data = pd.concat([plot_data, self._design], axis=1)
+        plot_data = pd.concat([plot_data, self._sample_data], axis=1)
 
         return self._plot_correlation(
             plot_data,
@@ -512,7 +531,7 @@ class FeatureMatrix(AnnotatedMatrix):
             y = values_y.name + suffixes[1]
             values_y.name = y
 
-        plot_data = pd.concat([values_x, values_y, self._design], axis=1)
+        plot_data = pd.concat([values_x, values_y, self._sample_data], axis=1)
         plot_data = plot_data.dropna(subset=[x, y])
 
         if plot_data.shape[0] == 0:
@@ -528,285 +547,148 @@ class FeatureMatrix(AnnotatedMatrix):
             **kwargs)
 
 
-class RegionMatrix(AnnotatedMatrix):
-    """AnnotatedMatrix that contains values indexed by genomic regions.
+class GenomicMatrix(AnnotatedMatrix):
+    """Base class for matrices indexed by genomic range/position.
 
-    RegionMatrices are 2D region-by-sample matrices, in which the rows
-    contain measurements for specific genomic regions (indicated by chromosome
-    and start/end positions). Examples are copy-number expression matrices,
-    in which each row contains the copy-number values for a specific bin in
-    the genome.
+    Should not be used directly. Use either ``PositionMatrix`` for
+    positioned data or ``RegionMatrix`` for ranged data.
     """
 
-    def __init__(self, values, design=None):
-        values = GenomicDataFrame(values, use_index=True)
-        super().__init__(values, design=design)
+    def __init__(self, values, sample_data=None):
+        if not isinstance(values, GenomicDataFrame):
+            values = GenomicDataFrame(values)
+        super().__init__(values, sample_data=sample_data)
 
-    @classmethod
-    def from_csv(cls,
-                 file_path,
-                 design=None,
-                 name_map=None,
-                 drop_cols=None,
-                 index_col=None,
-                 expand_index=False,
-                 **kwargs):
+    @property
+    def gloc(self):
+        """Genomic-position indexer.
 
-        if index_col is None:
-            index_col = 0 if expand_index else [0, 1, 2]
+        Used to select rows from the matrix by their genomic position.
+        Interface is the same as for the GenomicDataFrame gloc property
+        (which this method delegates to).
+        """
 
-        values = cls._read_csv(
-            file_path,
-            index_col=index_col,
-            design=design,
-            name_map=name_map,
-            drop_cols=drop_cols,
-            **kwargs)
+        return GLocWrapper(self._values.gloc, self._gloc_constructor)
 
-        if expand_index:
-            values.index = _expand_index(
-                values, names=['chromosome', 'start', 'end'])
-
-        return cls(values, design=design)
-
-    @classmethod
-    def from_position(cls, values, design=None, width=1):
-        # Build index.
-        positions = values.index.get_level_values(1)
-        start = positions - (width // 2)
-        end = positions + ((width // 2) + 1)
-
-        chromosome = values.index.get_level_values(0)
-        tuples = zip(chromosome, start, end)
-
-        index = pd.MultiIndex.from_tuples(
-            list(tuples), names=['chromosome', 'start', 'end'])
-
-        # Create and sort frame.
-        values = values.copy()
-        values.index = index
-
-        values = values.sort_index()
-
-        return cls(values, design=design)
-
-    def to_position(self):
-        positions = (self._values.gi.start + self._values.gi.end) // 2
-        tuples = zip(self._values.gi.chromosome, positions)
-
-        index = pd.MultiIndex.from_tuples(
-            list(tuples), names=['chromosome', 'position'])
-
-        values = self._values.copy()
-        values.index = index
-
+    def _gloc_constructor(self, values):
+        if isinstance(values, GenomicDataFrame):
+            values = self.__class__(
+                values.copy(), sample_data=self._sample_data.copy())
         return values
 
-    def to_igv(self, file_path, feature_fmt='BIN_{}', data_type=None):
-        """Writes dataframe to numerical format for viewing in IGV.
-
-        Parameters
-        ----------
-        file_path : str
-            Desination path for output file.
-        data_type : str
-            Datatype to include in the header, indicates to IGV what kind
-            of data the file contains. Valid values are: COPY_NUMBER,
-            GENE_EXPRESSION, CHIP, DNA_METHYLATION,
-            ALLELE_SPECIFIC_COPY_NUMBER, LOH, RNAI
+    @classmethod
+    def from_csv_condensed(cls,
+                           file_path,
+                           expression,
+                           sample_data=None,
+                           drop_cols=None,
+                           index_col=0,
+                           **kwargs):
+        """Reads matrix from CSV with condensed index, in which genomic
+           positions are stored in a condensed format (i.e. chrom:start-end)
+           in the dataframe.
         """
 
-        # Set index names correctly.
-        igv_data = self.values.copy()
-        igv_data.index.names = 'chromosome', 'start', 'end'
+        # Read values and expand index.
+        values = pd.read_csv(file_path, index_col=index_col, **kwargs)
+        values.index = expand_index(values.index, expression)
 
-        # Add feature column to index.
-        igv_data['feature'] = [
-            feature_fmt.format(i + 1) for i in range(igv_data.shape[0])
-        ]
-        igv_data.set_index('feature', append=True)
+        values = cls._preprocess_values(
+            values, sample_data=sample_data, drop_cols=drop_cols)
 
-        with open(file_path, 'w') as file_:
-            if data_type is not None:
-                print('#type=' + data_type, file=file_)
-                igv_data.to_csv(file_, sep='\t', index=True)
+        return cls(values, sample_data=sample_data)
 
     def as_segments(self):
-        """Converts matrix to segments by collapsing stretches with same values.
+        raise NotImplementedError()
 
-        Returns
-        -------
-        GenomicDataFrame
-            Dataframe containing the same-value segments per sample. Contains
-            'chromosome', 'start', 'end', 'value' and 'sample' columns,
-            indicating the range, value and sample of each corresponding
-            segment. The sample column indicates to which sample a segment
-            belongs.
+    @classmethod
+    def _segment_ranged(cls, values):
+        values = values.sort_index()
 
-        """
+        # Get segments per sample.
+        segments = pd.concat(
+            (cls._segments_for_sample(sample_values)
+             for _, sample_values in values.items()),
+            axis=0, ignore_index=True)  # yapf: disable
 
-        sample_segments = (
-            self._segments_for_sample(values).assign(sample=sample)
-            for sample, values in self._values.items())  # yapf: disable
-        segments = pd.concat(sample_segments, axis=0, ignore_index=True)
-
-        # Order segments on chromosome and start position.
-        segments['chromosome'] = pd.Categorical(
-            segments['chromosome'], categories=self._values.gi.chromosomes)
-
-        segments = segments.dropna(subset=['chromosome'])
-        segments = segments.sort_values(['sample', 'chromosome', 'start'])
-
-        # Drop existing index after sort.
-        segments = segments.reset_index(drop=True)
-
-        # Convert chromosome to str (no categorial).
-        segments['chromosome'] = segments['chromosome'].astype(str)
+        segments = segments.set_index(
+            ['chromosome', 'start', 'end'], drop=False)
 
         return GenomicDataFrame(segments)
 
     @staticmethod
-    def _segments_for_sample(segment_value_col):
-        # TODO: Sort by index?
+    def _segments_for_sample(sample_values):
+        # Calculate segment ids (distinguished by diff values).
+        segment_ids = np.cumsum(_padded_diff(sample_values) != 0)
 
-        # Aggregate by segment groups.
-        diff = _padded_diff(segment_value_col, pad_value=0)
-        segment_ids = np.cumsum(diff != 0)
+        # Get sample and position columns.
+        sample = sample_values.name
+        chrom_col, start_col, end_col = sample_values.index.names
 
-        grouped = (segment_value_col.reset_index().rename(
-            columns={segment_value_col.name: 'value'})
-                   .groupby(['chromosome', segment_ids]))
+        # Group and determine positions + values.
+        grouped = sample_values.reset_index().groupby(
+            by=[chrom_col, segment_ids])
 
         segments = grouped.agg({
-            'chromosome': 'first',
-            'start': 'min',
-            'end': 'max',
-            'value': ['first', 'size']
+            chrom_col: 'first',
+            start_col: 'min',
+            end_col: 'max',
+            sample: ['first', 'size']
         })
 
-        # Rename columns to flat index.
+        # Flatten column levels and rename.
         segments.columns = ['_'.join(s) for s in segments.columns]
         segments = segments.rename(columns={
-            'chromosome_first': 'chromosome',
-            'start_min': 'start',
-            'end_max': 'end',
-            'value_first': 'value',
-            'value_size': 'size'
+            chrom_col + '_first': 'chromosome',
+            start_col + '_min': 'start',
+            end_col + '_max': 'end',
+            sample + '_first': 'value',
+            sample + '_size': 'size'
         })
 
-        # Clean-up result.
+        # Add sample name and reorder columns.
         segments = segments.reindex(
             columns=['chromosome', 'start', 'end', 'value', 'size'])
+        segments['sample'] = sample
 
-        segments['sample'] = segment_value_col.name
-        segments = segments.reset_index(drop=True)
+        return segments.reset_index(drop=True)
 
-        return segments
+    def expand(self):
+        """Expands matrix to include values from missing bins.
 
-    def as_markers(self, name_fmt='Marker_{}'):
-        """Converts matrix to a list of probe markers."""
-
-        # Build marker frame.
-        markers = pd.DataFrame({
-            'chromosome': self._values.gi.chromosome,
-            'position': (self._values.gi.start + self._values.gi.end) // 2
-        })  # yapf: disable
-
-        # Sort by chromosome and position.
-        markers['chromosome'] = pd.Categorical(
-            markers['chromosome'], categories=self._values.gi.chromosomes)
-
-        markers = markers.sort_values(['chromosome', 'position'])
-        markers['chromosome'] = markers['chromosome'].astype(str)
-
-        # Add marker names.
-        markers['name'] = [name_fmt.format(i + 1)
-                           for i in range(self._values.shape[0])]# yapf: disable
-        markers = markers.reindex(columns=['name', 'chromosome', 'position'])
-
-        markers = markers.reset_index(drop=True)
-
-        return markers
-
-    def resample(self, bin_size, agg='mean'):
-        """Resamples chromosomal interval at given interval by binning."""
-
-        # Perform resampling per chromosome.
-        resampled = pd.concat(
-            (self._resample_chrom(grp, bin_size=bin_size, agg=agg)
-             for _, grp in self._values.groupby(level=0)),
-            axis=0)  # yapf: disable
-
-        # Restore original index order.
-        resampled = resampled.reindex(self._values.gi.chromosomes, level=0)
-
-        return self.__class__(resampled)
-
-    @staticmethod
-    def _resample_chrom(values, bin_size, agg):
-        # Bin rows by their centre positions.
-        positions = ((values.gi.start + values.gi.end) // 2).values
-
-        range_start = values.gi.start.min()
-        range_end = values.gi.end.max() + bin_size
-
-        bins = np.arange(range_start, range_end, bin_size)
-        binned = pd.cut(positions, bins=bins)
-
-        # Resample.
-        resampled = values.groupby(binned).agg(agg)
-
-        # Set index.
-        resampled['chromosome'] = values.index[0][0]
-        resampled['start'] = bins[:-1]
-        resampled['end'] = bins[1:] - 1
-        resampled = resampled.set_index(['chromosome', 'start', 'end'])
-
-        return resampled
-
-    def expand(self, fill_value=None):
-        """Expands value matrix to include all bins within range."""
-
-        expanded = self._expand(self._values, fill_value=fill_value)
-        return self.__class__(expanded, design=self._design)
-
-    @staticmethod
-    def _expand(values, fill_value=None):
-        """Internal function for expanding values.
-
-        Used by ``expand`` and ``impute`` methods. See ``expand``
-        documentation for more details .
+        Assumes rows are regularly spaced with a fixed bin size.
         """
 
-        def _chrom_index(grp, bin_size):
+        raise NotImplementedError()
+
+    @staticmethod
+    def _expand_ranged(values):
+        def _bin_indices(grp, bin_size):
             chrom = grp.index[0][0]
+
             start = grp.index.get_level_values(1).min()
             end = grp.index.get_level_values(2).max()
 
-            bins = np.arange(start - 1, end + 1, step=bin_size)
+            bins = np.arange(start, end + 1, step=bin_size)
 
-            starts = bins[:-1] + 1
-            ends = bins[1:]
+            return zip(cycle([chrom]), bins[:-1], bins[1:])
 
-            return zip(cycle([chrom]), starts, ends)
+        bin_size = values.index[0][2] - values.index[0][1]
 
-        bin_size = (values.gi.end[0] - values.gi.start[0]) + 1
+        indices = list(
+            chain.from_iterable(
+                _bin_indices(grp, bin_size=bin_size)
+                for _, grp in values.groupby(level=0)))
 
-        indices_per_chrom = (_chrom_index(grp, bin_size)
-                             for _, grp in values.groupby(level=0))
-        indices = list(chain.from_iterable(indices_per_chrom))
+        return values.reindex(index=indices)
 
-        expanded = values.loc[indices]
-
-        if fill_value is not None:
-            expanded = expanded.fillna(fill_value)
-
-        return expanded
-
-    def impute(self, window=11, min_probes=5):
+    def impute(self, window=11, min_probes=5, expand=True):
         """Imputes nan values from neighboring bins."""
 
-        values = self._expand(self._values)
+        if expand:
+            values = self.expand()._values
+        else:
+            values = self._values
 
         # Calculate median value within window (allowing for
         # window - min_probes number of NAs within the window).
@@ -820,16 +702,55 @@ class RegionMatrix(AnnotatedMatrix):
         mask = imputed.isnull().all(axis=1)
         imputed.loc[mask] = avg_values.loc[mask]
 
-        return self.__class__(imputed, design=self._design)
+        return self.__class__(imputed, sample_data=self._sample_data)
 
-    def subset(self, chromosomes):
-        """Subsets regions to given chromosomes."""
+    def resample(self, bin_size, start=0, agg='mean'):
+        """Resamples values at given interval by binning."""
+        raise NotImplementedError()
 
-        values = self._values.gi.subset(chromosomes)
-        return self.__class__(values, design=self._design)
+    @classmethod
+    def _resample_ranged(cls, values, bin_size, start=0, agg='mean'):
+        # Perform resampling per chromosome.
+        resampled = pd.concat(
+            (cls._resample_chromosome(
+                grp, bin_size=bin_size, agg=agg, start=start)
+             for _, grp in values.groupby(level=0)),
+            axis=0)  # yapf: disable
+
+        # Restore original index order.
+        resampled = resampled.reindex(values.gloc.chromosomes, level=0)
+
+        return GenomicDataFrame(resampled)
+
+    @staticmethod
+    def _resample_chromosome(values, bin_size, start=0, agg='mean'):
+        # Bin rows by their centre positions.
+        starts = values.index.get_level_values(1)
+        ends = values.index.get_level_values(2)
+
+        positions = (starts + ends) // 2
+
+        range_start = start
+        range_end = ends.max() + bin_size
+
+        bins = np.arange(range_start, range_end, bin_size)
+
+        if len(bins) < 2:
+            raise ValueError('No bins in range ({}, {}) with bin_size {}'.
+                             format(range_start, ends.max(), bin_size))
+
+        binned = pd.cut(positions, bins=bins)
+
+        # Resample.
+        resampled = values.groupby(binned).agg(agg)
+        resampled.index = pd.MultiIndex.from_arrays(
+            [[values.index[0][0]] * (len(bins) - 1), bins[:-1], bins[1:]],
+            names=values.index.names)
+
+        return resampled
 
     def annotate(self, features, id_='gene_id'):
-        """Annotates region values for given features."""
+        """Annotates values for given features."""
 
         # Setup getters for chrom/start/end columns.
         get_chrom = attrgetter(features.gi.chromosome_col)
@@ -851,7 +772,7 @@ class RegionMatrix(AnnotatedMatrix):
         annotated = pd.DataFrame.from_records(annotated_calls).T
         annotated.index.name = 'gene'
 
-        return FeatureMatrix(annotated, design=self._design)
+        return FeatureMatrix(annotated, sample_data=self._sample_data)
 
     def plot_sample(self, sample, ax=None, **kwargs):
         """Plots values for given sample along genomic axis."""
@@ -945,6 +866,220 @@ class RegionMatrix(AnnotatedMatrix):
             cm.ax_heatmap.set_ylabel('Genomic position')
 
         return cm
+
+
+class GLocWrapper(object):
+    """Wrapper class that wraps gloc indexer from given object."""
+
+    def __init__(self, gloc, constructor):
+        self._gloc = gloc
+        self._constructor = constructor
+
+    def __getattr__(self, name):
+        attr = getattr(self._gloc, name)
+
+        if callable(attr):
+            return self._wrap(attr)
+
+        return attr
+
+    def __getitem__(self, item):
+        result = self._gloc[item]
+
+        if isinstance(result, GenomicSlice):
+            result = GLocSliceWrapper(
+                self._gloc, chromosome=item, constructor=self._constructor)
+        else:
+            result = self._constructor(result)
+
+        return result
+
+    def _wrap(self, func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            """Wrapper that calls _constructor on returned result."""
+            result = func(*args, **kwargs)
+            return self._constructor(result)
+
+        return wrapper
+
+
+class GLocSliceWrapper(object):
+    """Wrapper class that wraps slice from gloc indexer on given object."""
+
+    def __init__(self, gloc, chromosome, constructor):
+        self._gloc = gloc
+        self._chromosome = chromosome
+        self._constructor = constructor
+
+    def __getitem__(self, item):
+        result = self._gloc[self._chromosome][item]
+        return self._constructor(result)
+
+
+POSITION_REGEX = r'(?P<chromosome>\w+):(?P<position>\d+)'
+
+
+class PositionMatrix(GenomicMatrix):
+    """AnnotatedMatrix that contains values indexed by genomic positions."""
+
+    def __init__(self, values, sample_data=None):
+        if not values.index.nlevels == 2:
+            raise ValueError('Values are not positioned')
+        super().__init__(values, sample_data=sample_data)
+
+    @classmethod
+    def from_csv(cls,
+                 file_path,
+                 sample_data=None,
+                 drop_cols=None,
+                 index_col=None,
+                 **kwargs):
+        return super().from_csv(
+            file_path,
+            sample_data=sample_data,
+            drop_cols=drop_cols,
+            index_col=[0, 1] if index_col is None else index_col,
+            **kwargs)
+
+    @classmethod
+    def from_csv_condensed(cls,
+                           file_path,
+                           expression=POSITION_REGEX,
+                           sample_data=None,
+                           drop_cols=None,
+                           index_col=0,
+                           **kwargs):
+        return super().from_csv_condensed(
+            file_path,
+            expression=expression,
+            sample_data=sample_data,
+            drop_cols=drop_cols,
+            index_col=index_col,
+            **kwargs)
+
+    def as_regions(self, width=1):
+        """Returns matrix with ranged index."""
+
+        values = self._values.as_ranged(width=width)
+        return RegionMatrix(values=values, sample_data=self.sample_data)
+
+    def as_segments(self):
+        values = self._values.as_ranged()
+        return self._segment_ranged(values)
+
+    def expand(self):
+        positions = self._values.index.get_level_values(1)
+        bin_size = np.diff(positions).min()
+
+        values = self._values.as_ranged(width=bin_size)
+        expanded = self._expand_ranged(values).as_positioned()
+
+        return self.__class__(expanded, sample_data=self._sample_data.copy())
+
+    def resample(self, bin_size, start=0, agg='mean'):
+        values = self._values.as_ranged()
+        resampled = self._resample_ranged(
+            values, bin_size, start=start, agg=agg)
+        resampled = resampled.as_positioned()
+
+        return self.__class__(resampled, sample_data=self._sample_data.copy())
+
+
+REGION_REGEX = r'(?P<chromosome>\w+):(?P<start>\d+)-(?P<end>\d+)'
+
+
+class RegionMatrix(GenomicMatrix):
+    """AnnotatedMatrix that contains values indexed by genomic regions.
+
+    RegionMatrices are 2D region-by-sample matrices, in which the rows
+    contain measurements for specific genomic regions (indicated by chromosome
+    and start/end positions). Examples are copy-number expression matrices,
+    in which each row contains the copy-number values for a specific bin in
+    the genome.
+    """
+
+    def __init__(self, values, sample_data=None):
+        if not values.index.nlevels == 3:
+            raise ValueError('Values are not ranged')
+        super().__init__(values, sample_data=sample_data)
+
+    @classmethod
+    def from_csv(cls,
+                 file_path,
+                 sample_data=None,
+                 drop_cols=None,
+                 index_col=None,
+                 **kwargs):
+        return super().from_csv(
+            file_path,
+            sample_data=sample_data,
+            drop_cols=drop_cols,
+            index_col=[0, 1, 2] if index_col is None else index_col,
+            **kwargs)
+
+    @classmethod
+    def from_csv_condensed(cls,
+                           file_path,
+                           expression=REGION_REGEX,
+                           sample_data=None,
+                           drop_cols=None,
+                           index_col=0,
+                           **kwargs):
+        return super().from_csv_condensed(
+            file_path,
+            expression=expression,
+            sample_data=sample_data,
+            drop_cols=drop_cols,
+            index_col=index_col,
+            **kwargs)
+
+    def as_positions(self):
+        """Returns matrix with positioned index."""
+
+        values = self._values.as_positioned()
+        return PositionMatrix(values=values, sample_data=self.sample_data)
+
+    def as_segments(self):
+        return self._segment_ranged(self._values)
+
+    def expand(self):
+        expanded = self._expand_ranged(self._values)
+        return self.__class__(expanded, sample_data=self._sample_data.copy())
+
+    def resample(self, bin_size, start=0, agg='mean'):
+        resampled = self._resample_ranged(
+            self._values, bin_size, start=start, agg=agg)
+        return self.__class__(resampled, sample_data=self._sample_data.copy())
+
+    def to_igv(self, file_path, feature_fmt='BIN_{}', data_type=None):
+        """Writes dataframe to numerical format for viewing in IGV.
+
+        Parameters
+        ----------
+        file_path : str
+            Desination path for output file.
+        data_type : str
+            Datatype to include in the header, indicates to IGV what kind
+            of data the file contains. Valid values are: COPY_NUMBER,
+            GENE_EXPRESSION, CHIP, DNA_METHYLATION,
+            ALLELE_SPECIFIC_COPY_NUMBER, LOH, RNAI
+        """
+
+        # Set index names correctly.
+        igv_data = self.values.copy()
+        igv_data.index.names = 'chromosome', 'start', 'end'
+
+        # Add feature column to index.
+        igv_data['feature'] = [
+            feature_fmt.format(i + 1) for i in range(igv_data.shape[0])
+        ]
+        igv_data.set_index('feature', append=True)
+
+        with open(file_path, 'w') as file_:
+            if data_type is not None:
+                print('#type=' + data_type, file=file_)
+                igv_data.to_csv(file_, sep='\t', index=True)
 
 
 def _expand_index(df, regex=None, names=('chromosome', 'start', 'end')):
