@@ -3,7 +3,7 @@
 
 from setuptools import setup, find_packages
 
-REQUIREMENTS = ['intervaltree', 'pandas', 'numpy']
+REQUIREMENTS = ['intervaltree', 'pandas', 'numpy', 'toolz']
 
 setup(
     name='genopandas',

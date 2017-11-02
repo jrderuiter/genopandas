@@ -15,17 +15,21 @@ class ExpressionMatrix(FeatureMatrix):
         if log2:
             normalized = np.log2(normalized + 1)
 
-        return self.__class__(normalized, design=self._design)
+        return self.__class__(normalized, sample_data=self._sample_data)
 
     @classmethod
-    def from_subread(cls, file_path, design=None, name_map=None, **kwargs):
+    def from_subread(cls,
+                     file_path,
+                     sample_data=None,
+                     sample_mapping=None,
+                     **kwargs):
         """Reads expression from a subread output file."""
 
         return super().from_csv(
             file_path,
-            design=design,
+            sample_data=sample_data,
+            sample_mapping=sample_mapping,
             drop_cols=['Chr', 'Start', 'End', 'Strand', 'Length'],
-            name_map=name_map,
             index_col=0,
             sep='\t',
             **kwargs)
