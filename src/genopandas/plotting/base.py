@@ -8,7 +8,7 @@ from itertools import cycle
 
 import toolz
 
-from .constants import CATEGORICAL_COLORS
+from ._constants import CATEGORICAL_COLORS
 
 
 def scatter_plot(data,

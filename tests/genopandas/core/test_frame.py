@@ -2,9 +2,8 @@
 
 import numpy as np
 import pandas as pd
-import pytest
-
 from pandas.api.types import is_numeric_dtype
+import pytest
 
 from genopandas.core.frame import GenomicDataFrame
 
@@ -28,22 +27,34 @@ def ranged_df():
 
 
 @pytest.fixture()
+def positioned_df():
+    """Simple example of a ranged dataframe."""
+
+    index = pd.MultiIndex.from_tuples(
+        [('1', 20), ('1', 30), ('2', 10), ('2', 50)],
+        names=['chromosome', 'position'])
+
+    df = pd.DataFrame(
+        np.random.randn(4, 4),
+        columns=['s{}'.format(i + 1) for i in range(4)],
+        index=index)
+
+    return df
+
+
+@pytest.fixture()
 def ranged_gdf(ranged_df):
     """Simple example genomic dataframe."""
     return GenomicDataFrame(ranged_df)
 
 
-class TestRangedGenomicDataFrame(object):
-    """Tests for GenomicDataFrame class with ranged data."""
+class TestGenomicDataFrame(object):
+    """Tests for GenomicDataFrame class."""
 
     def test_init(self, ranged_df):
         """Tests init with example data."""
 
         gdf = GenomicDataFrame(ranged_df)
-
-        # Check range/position property.
-        assert gdf.is_ranged
-        assert not gdf.is_positioned
 
         # Check shape of frame.
         assert len(gdf) == 4
@@ -53,6 +64,7 @@ class TestRangedGenomicDataFrame(object):
         assert list(gdf.gloc.chromosome) == ['1', '1', '2', '2']
         assert list(gdf.gloc.start) == [20, 30, 10, 50]
         assert list(gdf.gloc.end) == [30, 40, 25, 60]
+        assert list(gdf.gloc.position) == [25, 35, 17, 55]
 
         # Check available chromosomes.
         assert gdf.gloc.chromosomes == ['1', '2']
@@ -101,7 +113,7 @@ class TestRangedGenomicDataFrame(object):
     def test_gloc_lengths(self, ranged_gdf):
         """Tests computation of chromosome lengths."""
 
-        expected = {'1': 40, '2': 60}
+        expected = {'1': 39, '2': 59}
         assert ranged_gdf.gloc.chromosome_lengths == expected
 
     def test_gloc_lengths_predefined(self, ranged_df):
@@ -131,12 +143,13 @@ class TestRangedGenomicDataFrame(object):
         """Tests computation of offsets."""
 
         # Check offsets.
-        expected = {'1': 0, '2': 40, '_END_': 100}
+        expected = {'1': 0, '2': 39, '_END_': 98}
         assert ranged_gdf.gloc.chromosome_offsets == expected
 
         # Check offset starts/ends.
-        assert list(ranged_gdf.gloc.start_offset) == [20, 30, 50, 90]
-        assert list(ranged_gdf.gloc.end_offset) == [30, 40, 65, 100]
+        assert list(ranged_gdf.gloc.start_offset) == [20, 30, 49, 89]
+        assert list(ranged_gdf.gloc.end_offset) == [30, 40, 64, 99]
+        assert list(ranged_gdf.gloc.position_offset) == [25, 35, 56, 94]
 
     def test_gloc_offsets_predefined(self, ranged_df):
         """Tests use of predefined lengths."""
@@ -150,13 +163,13 @@ class TestRangedGenomicDataFrame(object):
         assert ranged_gdf.gloc.chromosome_offsets == expected
 
         # Test example with extra (unused) chromosome.
-        # Should omit chromosome from offsets.
+        # Should not omit chromosome from offsets.
         ranged_gdf = GenomicDataFrame(
             ranged_df, chrom_lengths={'1': 120,
                                       '2': 90,
                                       '3': 80})
 
-        expected = {'1': 0, '2': 120, '_END_': 210}
+        expected = {'1': 0, '2': 120, '3': 210, '_END_': 290}
         assert ranged_gdf.gloc.chromosome_offsets == expected
 
     def test_from_csv(self):
@@ -164,12 +177,12 @@ class TestRangedGenomicDataFrame(object):
 
         # Read file.
         file_path = pytest.helpers.data_path('frame_ranged.tsv')
-        gdf = GenomicDataFrame.from_csv(file_path, sep='\t')
+        gdf = GenomicDataFrame.from_csv(
+            file_path, index_col=['chromosome', 'start', 'end'], sep='\t')
 
         # Check shape.
         assert len(gdf) == 4
         assert list(gdf.columns) == ['s1', 's2', 's3', 's4']
-        assert gdf.is_ranged
 
         # Check some dtypes.
         assert not is_numeric_dtype(gdf.index.get_level_values(0))
@@ -220,13 +233,11 @@ class TestRangedGenomicDataFrame(object):
             index_col=['chromosome', 'start', 'end'])
 
         assert len(gdf) == 2
-        assert gdf.is_ranged
         assert list(gdf.columns) == ['feature', 'name']
 
         # Test un-named columns.
         gdf2 = GenomicDataFrame.from_records(records, index_col=[0, 1, 2])
         assert len(gdf2) == 2
-        assert gdf2.is_ranged
         assert list(gdf2.columns) == [3, 4]
 
     def test_from_records_tuple_dict(self):
@@ -241,145 +252,23 @@ class TestRangedGenomicDataFrame(object):
             records, index_col=['chromosome', 'start', 'end'])
 
         assert len(gdf) == 2
-        assert gdf.is_ranged
         assert list(gdf.columns) == ['feature', 'name']
 
-    def test_as_positioned(self, ranged_gdf):
-        """Test conversion to positioned frame."""
+    def test_from_position_df(self, positioned_df):
+        """Test from_position_df method."""
+        gdf = GenomicDataFrame.from_position_df(positioned_df)
 
-        positioned_gdf = ranged_gdf.as_positioned()
-
-        assert positioned_gdf.is_positioned
-        assert list(positioned_gdf.gloc.position) == [25, 35, 17, 55]
-
-    def test_as_ranged(self, ranged_gdf):
-        """Test conversion to ranged frame (should raise error)."""
-
-        with pytest.raises(ValueError):
-            ranged_gdf.as_ranged()
-
-
-@pytest.fixture()
-def positioned_df(ranged_df):
-    """Simple example of a positioned dataframe."""
-
-    positioned_df = ranged_df.copy()
-    positioned_df.index = ranged_df.index.droplevel(2)
-    positioned_df.index.names = ['chromosome', 'position']
-
-    return positioned_df
-
-
-@pytest.fixture()
-def positioned_gdf(positioned_df):
-    """Simple example of a positioned genomic dataframe."""
-    return GenomicDataFrame(positioned_df)
-
-
-class TestPositionedGenomicDataFrame(object):
-    """Tests for GenomicDataFrame class with positioned data."""
-
-    def test_init(self, positioned_df):
-        """Tests init with example data."""
-
-        gdf = GenomicDataFrame(positioned_df)
-
-        # Check range/position property.
-        assert gdf.is_positioned
-        assert not gdf.is_ranged
-
-        # Check shape of frame.
-        assert len(gdf) == 4
-        assert list(gdf.columns) == ['s1', 's2', 's3', 's4']
-
-        # Check index.
         assert list(gdf.gloc.chromosome) == ['1', '1', '2', '2']
+        assert list(gdf.gloc.start) == [20, 30, 10, 50]
+        assert list(gdf.gloc.end) == [21, 31, 11, 51]
         assert list(gdf.gloc.position) == [20, 30, 10, 50]
 
-    def test_gloc_subset(self, positioned_gdf):
-        """Tests subsetting chromosomes using gloc."""
+    def test_from_df_positioned(self, positioned_df):
+        """Test from_df method with positioned data."""
 
-        subset = positioned_gdf.gloc[['2']]
+        gdf = GenomicDataFrame.from_df(positioned_df)
 
-        assert len(subset) == 2
-        assert list(subset.gloc.chromosome) == ['2', '2']
-        assert subset.gloc.chromosomes == ['2']
-
-    def test_gloc_reorder(self, positioned_gdf):
-        """Tests reordering chromosomes using gloc."""
-
-        subset = positioned_gdf.gloc[['2', '1']]
-
-        assert len(subset) == 4
-        assert list(subset.gloc.chromosome) == ['2', '2', '1', '1']
-        assert subset.gloc.chromosomes == ['2', '1']
-
-    def test_gloc_slice(self, positioned_gdf):
-        """Tests slicing of dataframe using gloc."""
-
-        subset = positioned_gdf.gloc['1'][10:30]
-        assert len(subset) == 1
-
-    def test_gloc_search(self, positioned_gdf):
-        """Test searching of dataframe using gloc."""
-
-        # Test same example as slice.
-        subset = positioned_gdf.gloc.search('1', start=10, end=30)
-        assert len(subset) == 1
-
-        # Test strict search with example within bounds...
-        subset = positioned_gdf.gloc.search(
-            '1', start=10, end=30, strict_right=True)
-        assert len(subset) == 1
-
-        # ...and extending beyond bounds.
-        subset = positioned_gdf.gloc.search(
-            '1', start=10, end=20, strict_right=True)
-        assert len(subset) == 0
-
-    def test_gloc_lengths(self, positioned_gdf):
-        """Tests computation of lengths."""
-
-        expected = {'1': 30, '2': 50}
-        assert positioned_gdf.gloc.chromosome_lengths == expected
-
-    def test_gloc_offsets(self, positioned_gdf):
-        """Tests computation of offsets."""
-
-        # Check offsets.
-        expected = {'1': 0, '2': 30, '_END_': 80}
-        assert positioned_gdf.gloc.chromosome_offsets == expected
-
-        # Check offset positions.
-        assert list(positioned_gdf.gloc.position_offset) == [20, 30, 40, 80]
-
-    def test_from_csv(self):
-        """Tests reading data from tsv."""
-
-        # Read file.
-        file_path = pytest.helpers.data_path('frame_positioned.tsv')
-        gdf = GenomicDataFrame.from_csv(file_path, sep='\t', index_col=[0, 1])
-
-        # Check shape.
-        assert len(gdf) == 4
-        assert list(gdf.columns) == ['s1', 's2', 's3', 's4']
-        assert gdf.is_positioned
-
-        # Check some dtypes.
-        assert not is_numeric_dtype(gdf.index.get_level_values(0))
-        assert is_numeric_dtype(gdf.index.get_level_values(1))
-
-    def test_as_ranged(self, positioned_gdf):
-        """Test conversion to ranged frame."""
-
-        ranged_gdf = positioned_gdf.as_ranged(width=10)
-
-        assert ranged_gdf.is_ranged
-        assert list(ranged_gdf.gloc.start) == [15, 25, 5, 45]
-        assert list(ranged_gdf.gloc.end) == [25, 35, 15, 55]
-
-    def test_as_positioned(self, positioned_gdf):
-        """Test conversion to positioned frame (should not modify gdf)."""
-
-        postioned_gdf2 = positioned_gdf.as_positioned()
-        assert all(positioned_gdf.index == postioned_gdf2.index)
+        assert list(gdf.gloc.chromosome) == ['1', '1', '2', '2']
+        assert list(gdf.gloc.start) == [20, 30, 10, 50]
+        assert list(gdf.gloc.end) == [21, 31, 11, 51]
+        assert list(gdf.gloc.position) == [20, 30, 10, 50]

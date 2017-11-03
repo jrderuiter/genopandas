@@ -5,7 +5,7 @@ from itertools import cycle, islice
 
 import pandas as pd
 
-from .constants import NUMERICAL_CMAPS, CATEGORICAL_COLORS
+from ._constants import NUMERICAL_CMAPS, CATEGORICAL_COLORS
 
 
 def color_annotation(df, colors=None, bg_color='#ffffff'):

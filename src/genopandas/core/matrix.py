@@ -10,7 +10,7 @@ import toolz
 
 from genopandas.core.frame import GenomicDataFrame, GenomicSlice
 from genopandas.plotting.base import scatter_plot
-from genopandas.plotting.genomic import genomic_scatter
+from genopandas.plotting.genomic import genomic_scatter_plot
 from genopandas.plotting.clustermap import color_annotation, draw_legends
 from genopandas.util.pandas_ import DfWrapper
 
@@ -167,7 +167,7 @@ class AnnotatedMatrix(DfWrapper):
             sample_data=sample_data,
             feature_data=self._feature_data.copy())
 
-    def dropna_samples(self, subset, how='any', thresh=None):
+    def dropna_samples(self, subset=None, how='any', thresh=None):
         """Drops samples with NAs in sample_data."""
 
         sample_data = self._sample_data.dropna(
@@ -322,7 +322,7 @@ class GenomicMatrix(AnnotatedMatrix):
 
     def __init__(self, values, sample_data=None, feature_data=None):
         if not isinstance(values, GenomicDataFrame):
-            raise ValueError('Values should be a GenomicDataFrame')
+            values = GenomicDataFrame(values)
 
         super().__init__(
             values, sample_data=sample_data, feature_data=feature_data)
@@ -352,7 +352,11 @@ class GenomicMatrix(AnnotatedMatrix):
                              ' (for positioned data or 3 entries'
                              ' (for ranged data)')
 
-        values = pd.read_csv(file_path, index_col=index_col, **kwargs)
+        default_dtype = {index_col[0]: str}
+        dtype = toolz.merge(default_dtype, kwargs.pop('dtype', {}))
+
+        values = pd.read_csv(file_path, dtype=dtype, **kwargs)
+        values = values.set_index(index_col)
 
         values = cls._preprocess_values(
             values,
@@ -434,12 +438,12 @@ class GenomicMatrix(AnnotatedMatrix):
 
         # Correct for one-base and inclusive-ness to match Python conventions.
         starts = np.array(starts)
-        ends = np.array(ends)
 
         if is_one_based:
             starts -= 1
 
         if ends is not None and is_inclusive:
+            ends = np.array(ends)
             ends += 1
 
         # Build index.
@@ -461,7 +465,7 @@ class GenomicMatrix(AnnotatedMatrix):
         (which this method delegates to).
         """
 
-        return GLocIndexer(self._values.gloc, self._gloc_constructor)
+        return GLocWrapper(self._values.gloc, self._gloc_constructor)
 
     def _gloc_constructor(self, values):
         """Constructor that attempts to build new instance
@@ -543,7 +547,7 @@ class GenomicMatrix(AnnotatedMatrix):
             sample_data=self._sample_data.copy(),
             feature_data=feature_data)
 
-    def resample(self, bin_size, start=0, agg='mean'):
+    def resample(self, bin_size, start=None, agg='mean'):
         """Resamples values at given interval by binning."""
 
         # Perform resampling per chromosome.
@@ -562,14 +566,14 @@ class GenomicMatrix(AnnotatedMatrix):
             sample_data=self._sample_data.copy())
 
     @staticmethod
-    def _resample_chromosome(values, bin_size, start=0, agg='mean'):
+    def _resample_chromosome(values, bin_size, start=None, agg='mean'):
         # Bin rows by their centre positions.
         starts = values.index.get_level_values(1)
         ends = values.index.get_level_values(2)
 
         positions = (starts + ends) // 2
 
-        range_start = start
+        range_start = starts.min() if start is None else start
         range_end = ends.max() + bin_size
 
         bins = np.arange(range_start, range_end, bin_size)
@@ -612,7 +616,7 @@ class GenomicMatrix(AnnotatedMatrix):
 
     def plot_sample(self, sample, ax=None, **kwargs):
         """Plots values for given sample along genomic axis."""
-        ax = genomic_scatter(self._values, y=sample, ax=ax, **kwargs)
+        ax = genomic_scatter_plot(self._values, y=sample, ax=ax, **kwargs)
         return ax
 
     def plot_heatmap(self,
@@ -707,7 +711,7 @@ class GenomicMatrix(AnnotatedMatrix):
         return cm
 
 
-class GLocIndexer(object):
+class GLocWrapper(object):
     """Wrapper class that wraps gloc indexer from given object."""
 
     def __init__(self, gloc, constructor):

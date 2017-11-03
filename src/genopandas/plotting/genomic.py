@@ -9,18 +9,18 @@ import toolz
 from .base import scatter_plot, step_plot, apply_palette
 
 
-def genomic_scatter(data,
-                    y,
-                    hue=None,
-                    hue_order=None,
-                    palette=None,
-                    color=None,
-                    chromosomes=None,
-                    legend=True,
-                    legend_kws=None,
-                    ax=None,
-                    style_axis=True,
-                    **kwargs):
+def genomic_scatter_plot(data,
+                         y,
+                         hue=None,
+                         hue_order=None,
+                         palette=None,
+                         color=None,
+                         chromosomes=None,
+                         legend=True,
+                         legend_kws=None,
+                         ax=None,
+                         style_axis=True,
+                         **kwargs):
     """Plots genomic data along a chromosomal axis.
 
     Parameters
@@ -135,18 +135,18 @@ def _draw_dividers(chrom_offsets, ax):
     ax.set_xlim(0, chrom_offsets['_END_'])
 
 
-def genomic_step(data,
-                 y,
-                 hue=None,
-                 hue_order=None,
-                 palette=None,
-                 color=None,
-                 chromosomes=None,
-                 legend=True,
-                 legend_kws=None,
-                 ax=None,
-                 style_axis=True,
-                 **kwargs):
+def genomic_step_plot(data,
+                      y,
+                      hue=None,
+                      hue_order=None,
+                      palette=None,
+                      color=None,
+                      chromosomes=None,
+                      legend=True,
+                      legend_kws=None,
+                      ax=None,
+                      style_axis=True,
+                      **kwargs):
 
     if chromosomes is not None:
         data = data.gloc[chromosomes]
@@ -209,16 +209,16 @@ def genomic_step(data,
     return ax
 
 
-def genomic_regions(data,
-                    y=None,
-                    hue=None,
-                    hue_order=None,
-                    palette=None,
-                    color=None,
-                    chromosomes=None,
-                    ax=None,
-                    style_axis=True,
-                    **kwargs):
+def genomic_region_plot(data,
+                        y=None,
+                        hue=None,
+                        hue_order=None,
+                        palette=None,
+                        color=None,
+                        chromosomes=None,
+                        ax=None,
+                        style_axis=True,
+                        **kwargs):
     """Plots highlighted regions along a genomic axis.
 
     Parameters
