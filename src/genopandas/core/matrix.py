@@ -1,4 +1,6 @@
 import functools
+import itertools
+import operator
 import re
 
 import numpy as np
@@ -8,6 +10,7 @@ import toolz
 
 from genopandas.core.frame import GenomicDataFrame, GenomicSlice
 from genopandas.plotting.base import scatter_plot
+from genopandas.plotting.genomic import genomic_scatter
 from genopandas.plotting.clustermap import color_annotation, draw_legends
 from genopandas.util.pandas_ import DfWrapper
 
@@ -183,33 +186,34 @@ class AnnotatedMatrix(DfWrapper):
             all(self.sample_data == other.sample_data) and \
             all(self.feature_data == other.feature_data)
 
-    def plot_heatmap(self,
-                     cmap='RdBu_r',
-                     sample_cols=None,
-                     sample_colors=None,
-                     feature_cols=None,
-                     feature_colors=None,
-                     metric='euclidean',
-                     method='complete',
-                     transpose=False,
-                     legend_kws=None,
-                     **kwargs):
+    def plot_heatmap(
+            self,
+            cmap='RdBu_r',
+            sample_cols=None,
+            sample_colors=None,
+            feature_cols=None,
+            feature_colors=None,
+            metric='euclidean',
+            method='complete',
+            transpose=False,
+            # legend_kws=None,
+            **kwargs):
         """Plots clustered heatmap of matrix values."""
 
         import matplotlib.pyplot as plt
         import seaborn as sns
 
         if sample_cols is not None:
-            sample_annot, sample_cmap = color_annotation(
+            sample_annot, _ = color_annotation(
                 self._sample_data[sample_cols], colors=sample_colors)
         else:
-            sample_annot, sample_cmap = None, None
+            sample_annot, _ = None, None
 
         if feature_cols is not None:
-            feature_annot, feature_cmap = color_annotation(
+            feature_annot, _ = color_annotation(
                 self._feature_data[feature_cols], colors=feature_colors)
         else:
-            feature_annot, feature_cmap = None, None
+            feature_annot, _ = None, None
 
         clustermap_kws = dict(kwargs)
 
@@ -314,15 +318,11 @@ class AnnotatedMatrix(DfWrapper):
 
 
 class GenomicMatrix(AnnotatedMatrix):
-    """Base class for matrices indexed by genomic range/position.
-
-    Should not be used directly. Use either ``PositionedGenomicMatrix`` for
-    positioned data or ``RangedGenomicMatrix`` for ranged data.
-    """
+    """Class respresenting matrices indexed by genomic positions."""
 
     def __init__(self, values, sample_data=None, feature_data=None):
         if not isinstance(values, GenomicDataFrame):
-            raise ValueError('Values should be a GenomicDataFrame instance')
+            raise ValueError('Values should be a GenomicDataFrame')
 
         super().__init__(
             values, sample_data=sample_data, feature_data=feature_data)
@@ -332,11 +332,7 @@ class GenomicMatrix(AnnotatedMatrix):
         if not isinstance(values, GenomicDataFrame):
             values = GenomicDataFrame.from_df(
                 values, chrom_lengths=chrom_lengths)
-
-        if values.index.nlevels == 3:
-            return RangedGenomicMatrix(values, **kwargs)
-        else:
-            raise NotImplementedError()
+        return cls(values, **kwargs)
 
     @classmethod
     def from_csv(cls,
@@ -346,9 +342,10 @@ class GenomicMatrix(AnnotatedMatrix):
                  feature_data=None,
                  sample_mapping=None,
                  feature_mapping=None,
-                 chrom_lengths=None,
                  drop_cols=None,
+                 chrom_lengths=None,
                  **kwargs):
+        """Reads values from a csv file."""
 
         if not 2 <= len(index_col) <= 3:
             raise ValueError('index_col should contain 2 entries'
@@ -374,19 +371,26 @@ class GenomicMatrix(AnnotatedMatrix):
     @classmethod
     def from_csv_condensed(cls,
                            file_path,
-                           index_regex,
                            index_col=0,
                            sample_data=None,
                            feature_data=None,
                            sample_mapping=None,
                            feature_mapping=None,
-                           chrom_lengths=None,
                            drop_cols=None,
+                           chrom_lengths=None,
+                           index_regex=RANGED_REGEX,
+                           is_one_based=False,
+                           is_inclusive=False,
                            **kwargs):
+        """Reads values from a csv file with a condensed index."""
 
-        # Read csv and expand index.
         values = pd.read_csv(file_path, index_col=index_col, **kwargs)
-        values.index = cls._expand_condensed_index(values.index, index_regex)
+
+        values.index = cls._expand_condensed_index(
+            values.index,
+            index_regex,
+            is_one_based=is_one_based,
+            is_inclusive=is_inclusive)
 
         values = cls._preprocess_values(
             values,
@@ -406,9 +410,47 @@ class GenomicMatrix(AnnotatedMatrix):
     def _expand_condensed_index(cls,
                                 index,
                                 regex_expr,
-                                one_based=False,
-                                inclusive=False):
-        raise NotImplementedError()
+                                is_one_based=False,
+                                is_inclusive=False):
+        """Expands condensed index into a MultiIndex."""
+
+        # Parse entries.
+        regex = re.compile(regex_expr)
+        group_dicts = (regex.match(el).groupdict() for el in index)
+
+        # Extract chromosome, start, end positions.
+        if regex.groups == 3:
+            tups = ((grp['chromosome'], int(grp['start']), int(grp['end']))
+                    for grp in group_dicts)
+            chrom, starts, ends = zip(*tups)
+        elif regex.groups == 2:
+            tups = ((grp['chromosome'], int(grp['position']))
+                    for grp in group_dicts)
+            chrom, starts = zip(*tups)
+            ends = None
+        else:
+            raise ValueError('Regex should have two or three groups '
+                             '(for positioned/ranged data, respectively)')
+
+        # Correct for one-base and inclusive-ness to match Python conventions.
+        starts = np.array(starts)
+        ends = np.array(ends)
+
+        if is_one_based:
+            starts -= 1
+
+        if ends is not None and is_inclusive:
+            ends += 1
+
+        # Build index.
+        if ends is None:
+            index = pd.MultiIndex.from_arrays(
+                [chrom, starts], names=['chromosome', 'position'])
+        else:
+            index = pd.MultiIndex.from_arrays(
+                [chrom, starts, ends], names=['chromosome', 'start', 'end'])
+
+        return index
 
     @property
     def gloc(self):
@@ -419,7 +461,7 @@ class GenomicMatrix(AnnotatedMatrix):
         (which this method delegates to).
         """
 
-        return GLocWrapper(self._values.gloc, self._gloc_constructor)
+        return GLocIndexer(self._values.gloc, self._gloc_constructor)
 
     def _gloc_constructor(self, values):
         """Constructor that attempts to build new instance
@@ -436,8 +478,236 @@ class GenomicMatrix(AnnotatedMatrix):
 
         return values
 
+    def expand(self):
+        """Expands matrix to include values from missing bins.
 
-class GLocWrapper(object):
+        Assumes rows are regularly spaced with a fixed bin size.
+        """
+
+        expanded = self._expand(self._values)
+        feature_data = self._feature_data.reindex(index=expanded.index)
+
+        return self.__class__(
+            expanded,
+            sample_data=self._sample_data.copy(),
+            feature_data=feature_data)
+
+    @staticmethod
+    def _expand(values):
+        def _bin_indices(grp, bin_size):
+            chrom = grp.index[0][0]
+
+            start = grp.index.get_level_values(1).min()
+            end = grp.index.get_level_values(2).max()
+
+            bins = np.arange(start, end + 1, step=bin_size)
+
+            return zip(itertools.cycle([chrom]), bins[:-1], bins[1:])
+
+        bin_size = values.index[0][2] - values.index[0][1]
+
+        # TODO: Warn if bin_size is 1? (Probably positioned data).
+
+        indices = list(
+            itertools.chain.from_iterable(
+                _bin_indices(grp, bin_size=bin_size)
+                for _, grp in values.groupby(level=0)))
+
+        return values.reindex(index=indices)
+
+    def impute(self, window=11, min_probes=5, expand=True):
+        """Imputes nan values from neighboring bins."""
+
+        if expand:
+            values = self._expand(self._values)
+        else:
+            values = self._values
+
+        # Calculate median value within window (allowing for
+        # window - min_probes number of NAs within the window).
+        rolling = values.rolling(
+            window=window, min_periods=min_probes, center=True)
+        avg_values = rolling.median()
+
+        # Copy over values for null rows for the imputation.
+        imputed = values.copy()
+
+        mask = imputed.isnull().all(axis=1)
+        imputed.loc[mask] = avg_values.loc[mask]
+
+        # Match feature data to new values.
+        feature_data = self._feature_data.reindex(index=imputed.index)
+
+        return self.__class__(
+            imputed,
+            sample_data=self._sample_data.copy(),
+            feature_data=feature_data)
+
+    def resample(self, bin_size, start=0, agg='mean'):
+        """Resamples values at given interval by binning."""
+
+        # Perform resampling per chromosome.
+        resampled = pd.concat(
+            (self._resample_chromosome(
+                grp, bin_size=bin_size, agg=agg, start=start)
+             for _, grp in self._values.groupby(level=0)),
+            axis=0)  # yapf: disable
+
+        # Restore original index order.
+        resampled = resampled.reindex(self._values.gloc.chromosomes, level=0)
+
+        return self.__class__(
+            GenomicDataFrame(
+                resampled, chrom_lengths=self._values.chromosome_lengths),
+            sample_data=self._sample_data.copy())
+
+    @staticmethod
+    def _resample_chromosome(values, bin_size, start=0, agg='mean'):
+        # Bin rows by their centre positions.
+        starts = values.index.get_level_values(1)
+        ends = values.index.get_level_values(2)
+
+        positions = (starts + ends) // 2
+
+        range_start = start
+        range_end = ends.max() + bin_size
+
+        bins = np.arange(range_start, range_end, bin_size)
+
+        if len(bins) < 2:
+            raise ValueError('No bins in range ({}, {}) with bin_size {}'.
+                             format(range_start, ends.max(), bin_size))
+
+        binned = pd.cut(positions, bins=bins)
+
+        # Resample.
+        resampled = values.groupby(binned).agg(agg)
+        resampled.index = pd.MultiIndex.from_arrays(
+            [[values.index[0][0]] * (len(bins) - 1), bins[:-1], bins[1:]],
+            names=values.index.names)
+
+        return resampled
+
+    def annotate(self, features, feature_id='gene_id'):
+        """Annotates values for given features."""
+
+        # Calculate calls.
+        get_id = operator.attrgetter(feature_id)
+
+        annotated_calls = {}
+        for feature in features.itertuples():
+            try:
+                chrom, start, end = feature.Index
+                overlap = self._values.gloc.search(chrom, start, end)
+
+                annotated_calls[get_id(feature)] = overlap.median()
+            except KeyError:
+                pass
+
+        # Assemble into dataframe.
+        annotated = pd.DataFrame.from_records(annotated_calls).T
+        annotated.index.name = feature_id
+
+        return AnnotatedMatrix(annotated, sample_data=self._sample_data)
+
+    def plot_sample(self, sample, ax=None, **kwargs):
+        """Plots values for given sample along genomic axis."""
+        ax = genomic_scatter(self._values, y=sample, ax=ax, **kwargs)
+        return ax
+
+    def plot_heatmap(self,
+                     cmap='RdBu_r',
+                     sample_cols=None,
+                     sample_colors=None,
+                     metric='euclidean',
+                     method='complete',
+                     transpose=True,
+                     cluster=True,
+                     **kwargs):
+        """Plots heatmap of gene expression over samples."""
+
+        if 'row_cluster' in kwargs or 'col_cluster' in kwargs:
+            raise ValueError(
+                'GenomicMatrices only supports clustering by samples. '
+                'Use the \'cluster\' argument to specify whether '
+                'clustering should be performed.')
+
+        if cluster:
+            from scipy.spatial.distance import pdist
+            from scipy.cluster.hierarchy import linkage
+
+            # Do clustering on matrix with only finite values.
+            values_clust = self._values.replace([np.inf, -np.inf], np.nan)
+            values_clust = values_clust.dropna()
+
+            dist = pdist(values_clust.T, metric=metric)
+            sample_linkage = linkage(dist, method=method)
+        else:
+            sample_linkage = None
+
+        # Draw heatmap.
+        heatmap_kws = dict(kwargs)
+
+        if transpose:
+            heatmap_kws.update({
+                'row_cluster': sample_linkage is not None,
+                'row_linkage': sample_linkage,
+                'col_cluster': False
+            })
+        else:
+            heatmap_kws.update({
+                'col_cluster': sample_linkage is not None,
+                'col_linkage': sample_linkage,
+                'row_cluster': False
+            })
+
+        cm = super().plot_heatmap(
+            sample_cols=sample_cols,
+            sample_colors=sample_colors,
+            cmap=cmap,
+            metric=metric,
+            method=method,
+            transpose=transpose,
+            **heatmap_kws)
+
+        self._style_heatmap(cm, transpose=transpose)
+
+        return cm
+
+    def _style_heatmap(self, cm, transpose):
+        chrom_breaks = self._values.groupby(level=0).size().cumsum()
+
+        chrom_labels = self._values.gloc.chromosomes
+        chrom_label_pos = np.concatenate([[0], chrom_breaks])
+        chrom_label_pos = (chrom_label_pos[:-1] + chrom_label_pos[1:]) / 2
+
+        if transpose:
+            cm.ax_heatmap.set_xticks([])
+
+            for loc in chrom_breaks[:-1]:
+                cm.ax_heatmap.axvline(loc, color='grey', lw=1)
+
+            cm.ax_heatmap.set_xticks(chrom_label_pos)
+            cm.ax_heatmap.set_xticklabels(chrom_labels, rotation=0)
+
+            cm.ax_heatmap.set_xlabel('Genomic position')
+            cm.ax_heatmap.set_ylabel('Samples')
+        else:
+            cm.ax_heatmap.set_yticks([])
+
+            for loc in chrom_breaks[:-1]:
+                cm.ax_heatmap.axhline(loc, color='grey', lw=1)
+
+            cm.ax_heatmap.set_yticks(chrom_label_pos)
+            cm.ax_heatmap.set_yticklabels(chrom_labels, rotation=0)
+
+            cm.ax_heatmap.set_xlabel('Samples')
+            cm.ax_heatmap.set_ylabel('Genomic position')
+
+        return cm
+
+
+class GLocIndexer(object):
     """Wrapper class that wraps gloc indexer from given object."""
 
     def __init__(self, gloc, constructor):
@@ -484,41 +754,3 @@ class GLocSliceWrapper(object):
     def __getitem__(self, item):
         result = self._gloc[self._chromosome][item]
         return self._constructor(result)
-
-
-class RangedGenomicMatrix(GenomicMatrix):
-    @classmethod
-    def _expand_condensed_index(cls,
-                                index,
-                                regex_expr,
-                                one_based=False,
-                                inclusive=False):
-
-        # TODO: Check regex.
-
-        regex = re.compile(regex_expr)
-
-        # Extract chromosome, start, end positions.
-        group_dicts = (regex.match(el).groupdict() for el in index)
-
-        tups = ((grp['chromosome'], int(grp['start']), int(grp['end']))
-                for grp in group_dicts)
-
-        chrom, starts, ends = zip(*tups)
-
-        # Correct for one-base and/or inclusive-ness to
-        # match Python conventions.
-        starts = np.array(starts)
-        ends = np.array(ends)
-
-        if one_based:
-            starts -= 1
-
-        if inclusive:
-            ends += 1
-
-        # Build index.
-        index = pd.MultiIndex.from_arrays(
-            [chrom, starts, ends], names=['chromosome', 'start', 'end'])
-
-        return index

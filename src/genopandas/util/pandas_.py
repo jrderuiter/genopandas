@@ -38,14 +38,18 @@ class DfWrapper(object):
         return self._constructor(values)
 
     def __getattr__(self, name):
-        result = getattr(self._values, name)
-
-        if callable(result):
-            result = self._wrap_function(result)
+        if hasattr(self._values, name):
+            attr = getattr(self._values, name)
         else:
-            result = self._constructor(result)
+            raise AttributeError('{!r} object has no attribute {!r}'.format(
+                self.__class__.__name__, name))
 
-        return result
+        if callable(attr):
+            attr = self._wrap_function(attr)
+        else:
+            attr = self._constructor(attr)
+
+        return attr
 
     def _wrap_function(self, func):
         """Wrap functions to call _constructor on returned value."""

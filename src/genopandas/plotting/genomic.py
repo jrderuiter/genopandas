@@ -6,8 +6,6 @@ import numpy as np
 import pandas as pd
 import toolz
 
-from genopandas.util import with_defaults
-
 from .base import scatter_plot, step_plot, apply_palette
 
 
@@ -66,15 +64,10 @@ def genomic_scatter(data,
     if chromosomes is not None:
         data = data.gloc[chromosomes]
 
-    if hasattr(data.gloc, 'start_offset'):
-        positions = (data.gloc.start_offset + data.gloc.end_offset) // 2
-    else:
-        positions = data.gloc.position_offset
-
     # Assemble plot data.
     plot_data = pd.DataFrame({
         'chromosome': data.gloc.chromosome.values,
-        'position': positions.values,
+        'position': data.gloc.position_offset.values,
         'y': data[y].values
     })  # yapf: disable
 
@@ -158,44 +151,31 @@ def genomic_step(data,
     if chromosomes is not None:
         data = data.gloc[chromosomes]
 
-    if hasattr(data.gloc, 'start_offset'):
-        # We need to include both start/end positions in the dataframe.
-        # To do so, we basically create two copies of the original df
-        # (one with start, one with end positions), concat these two frames
-        # and then sort the concatenated frame by original index and position.
+    # We need to include both start/end positions in the dataframe.
+    # To do so, we basically create two copies of the original df
+    # (one with start, one with end positions), concat these two frames
+    # and then sort the concatenated frame by original index and position.
 
-        # Create initial frame (with start positions).
-        plot_data = pd.DataFrame({
-            'chromosome': data.gloc.chromosome.values,
-            'position': data.gloc.start_offset.values,
-            'y': data[y].values,
-            'index': np.arange(len(data[y]))
-        })
+    # Create initial frame (with start positions).
+    plot_data = pd.DataFrame({
+        'chromosome': data.gloc.chromosome.values,
+        'position': data.gloc.start_offset.values,
+        'y': data[y].values,
+        'index': np.arange(len(data[y]))
+    })
 
-        if hue is not None:
-            plot_data[hue] = data[hue]
+    if hue is not None:
+        plot_data[hue] = data[hue]
 
-        # Merge with copy containing end positions.
-        plot_data = pd.concat(
-            [
-                plot_data,
-                plot_data.assign(position=data.gloc.end_offset.values)
-            ],
-            axis=0)
+    # Merge with copy containing end positions.
+    plot_data = pd.concat(
+        [plot_data,
+         plot_data.assign(position=data.gloc.end_offset.values)],
+        axis=0)
 
-        # Sort by original row order.
-        plot_data = plot_data.sort_values(by=['index', 'position'])
-        plot_data = plot_data.drop('index')
-    else:
-        # Simply use positions.
-        plot_data = pd.DataFrame({
-            'chromosome': data.gloc.chromosome.values,
-            'position': data.gloc.position_offset.values,
-            'y': data[y].values
-        })
-
-        if hue is not None:
-            plot_data[hue] = data[hue]
+    # Sort by original row order.
+    plot_data = plot_data.sort_values(by=['index', 'position'])
+    plot_data = plot_data.drop('index')
 
     # Order hue by data chromosome order if hue == "chromosome" and
     # no specific order is given.
@@ -279,9 +259,6 @@ def genomic_regions(data,
     """
 
     from matplotlib import pyplot as plt
-
-    if not hasattr(data.gloc, 'start_offset'):
-        raise ValueError('Only ranged data can be plotted as regions')
 
     if chromosomes is not None:
         data = data.gloc[chromosomes]
