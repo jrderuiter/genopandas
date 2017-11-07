@@ -8,37 +8,73 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import toolz
 
-from genopandas.core.frame import GenomicDataFrame, GenomicSlice
-from genopandas.plotting.base import scatter_plot
-from genopandas.plotting.genomic import genomic_scatter_plot
-from genopandas.plotting.clustermap import color_annotation, draw_legends
+from genopandas.plotting import (scatter_plot, genomic_scatter_plot,
+                                 color_annotation)
 from genopandas.util.pandas_ import DfWrapper
+
+from .frame import GenomicDataFrame, GenomicSlice
 
 RANGED_REGEX = r'(?P<chromosome>\w+):(?P<start>\d+)-(?P<end>\d+)'
 POSITIONED_REGEX = r'(?P<chromosome>\w+):(?P<position>\d+)'
 
 
 class AnnotatedMatrix(DfWrapper):
+    """AnnotatedMatrix class.
+
+    Annotated matrix classes respresent 2D numeric feature-by-sample matrices
+    (with 'features' along the rows and samples along the columns), which can
+    be annotated with optional sample_data and feature_data frames that
+    describe the samples. The type of feature varies between different
+    sub-classes, examples being genes (for gene expression matrices) and
+    region-based bins (for copy-number data).
+
+    This (base) class mainly contains a variety of methods for querying,
+    subsetting and combining different annotation matrices. General plotting
+    methods are also provided (``plot_heatmap``).
+
+    Note that the class follows the feature-by-sample convention that is
+    typically followed in biological packages, rather than the sample-by-feature
+    orientation. This has the additional advantage of allowing more complex
+    indices (such as a region-based MultiIndex) for the features, which are
+    more difficult to use for DataFrame columns than for rows.
+
+    Attributes
+    ----------
+    values : pd.DataFrame
+        Matrix values.
+    sample_data : pd.DataFrame
+        Sample data.
+    feature_data : pd.DataFrame
+        Feature data.
+
+    """
+
     def __init__(self, values, sample_data=None, feature_data=None):
+        if isinstance(values, AnnotatedMatrix):
+            # Copy values from existing matrix.
+            sample_data = values.sample_data.copy()
+            feature_data = values.feature_data.copy()
+            values = values.values.copy()
+        else:
+            # Create empty annotations if none given.
+            if sample_data is None:
+                sample_data = pd.DataFrame({}, index=values.columns)
 
-        # Create empty annotations if none given.
-        if sample_data is None:
-            sample_data = pd.DataFrame({}, index=values.columns)
+            if feature_data is None:
+                feature_data = pd.DataFrame({}, index=values.index)
 
-        if feature_data is None:
-            feature_data = pd.DataFrame({}, index=values.index)
+            # Check {sample,feature}_data.
+            assert (values.shape[1] == sample_data.shape[0]
+                    and all(values.columns == sample_data.index))
 
-        # Check {sample,feature}_data.
-        assert (values.shape[1] == sample_data.shape[0]
-                and all(values.columns == sample_data.index))
+            assert (values.shape[0] == feature_data.shape[0]
+                    and all(values.index == feature_data.index))
 
-        assert (values.shape[0] == feature_data.shape[0]
-                and all(values.index == feature_data.index))
-
-        # Check if all matrix columns are numeric.
-        for col_name, col_values in values.items():
-            if not is_numeric_dtype(col_values):
-                raise ValueError('Column {} is not numeric'.format(col_name))
+            # Check if all matrix columns are numeric.
+            for col_name, col_values in values.items():
+                if not is_numeric_dtype(col_values):
+                    raise ValueError(
+                        'Column {} is not numeric'.format(col_name))
 
         super().__init__(values)
 
@@ -93,13 +129,16 @@ class AnnotatedMatrix(DfWrapper):
 
         return cls(values, sample_data=sample_data, feature_data=feature_data)
 
-    @staticmethod
-    def _preprocess_values(values,
+    @classmethod
+    def _preprocess_values(cls,
+                           values,
                            sample_data=None,
                            feature_data=None,
                            sample_mapping=None,
                            feature_mapping=None,
-                           drop_cols=None):
+                           drop_cols=None,
+                           check_missing=True):
+        """Preprocesses matrix to match given sample/feature data."""
 
         # Drop extra columns (if needed).
         if drop_cols is not None:
@@ -117,7 +156,28 @@ class AnnotatedMatrix(DfWrapper):
         values = values.reindex(
             columns=sample_order, index=feat_order, copy=False)
 
+        # Check if we introduced any missing samples.
+        if check_missing:
+            cls._check_missing(values, axis=0)
+            cls._check_missing(values, axis=1)
+
         return values
+
+    @staticmethod
+    def _check_missing(values, axis=0):
+        """Checks for missing samples/features in matrix (represented as full
+           rows/columns of nan values in the matrix after the reindex).
+        """
+
+        mask = values.isnull().all(axis=axis)
+
+        if mask.any():
+            missing = set(mask.loc[mask].index)
+            entry_name = 'samples' if axis == 0 else 'features'
+
+            raise ValueError(
+                'Missing {} {!r} in axis {}'
+                .format(entry_name, missing, axis))  # yapf: disable
 
     def rename(self, index=None, columns=None):
         """Rename samples/features in the matrix."""
@@ -136,6 +196,51 @@ class AnnotatedMatrix(DfWrapper):
 
         return self.__class__(
             renamed, feature_data=feature_data, sample_data=sample_data)
+
+    def melt(self,
+             with_sample_data=False,
+             with_feature_data=False,
+             value_name='value'):
+        """Melts values into 'tidy' format, optionally including annotation."""
+
+        values_long = pd.melt(
+            self._values.reset_index(),
+            id_vars=self._values.index.name,
+            var_name='sample',
+            value_name=value_name)
+
+        if with_sample_data and self._sample_data.shape[1] > 0:
+            # Merge with sample data.
+            sample_data = self._sample_data.reset_index()
+
+            # Rename sample column if needed.
+            sample_col = self._sample_data.index.name
+
+            if sample_col != 'sample':
+                sample_data = sample_data.rename(
+                    columns={sample_col: 'sample'})
+
+            # Merge with annotation.
+            values_long = pd.merge(
+                values_long, sample_data, how='left', on='sample')
+
+        if with_feature_data and self._feature_data.shape[1] > 0:
+            # Merge with feature data.
+            feature_data = self._feature_data.reset_index()
+
+            # Rename feature column if needed.
+            feat_col = self._sample_data.index.name
+            feat_col_values = self._values.index.name
+
+            if feat_col != feat_col_values:
+                feature_data = feature_data.rename(
+                    columns={feat_col: feat_col_values})
+
+            # Merge with annotation.
+            values_long = pd.merge(
+                values_long, feature_data, how='left', on=feat_col_values)
+
+        return values_long
 
     def query_samples(self, expr):
         """Subsets samples in matrix by querying sample_data with expression.

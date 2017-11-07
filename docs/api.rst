@@ -20,10 +20,7 @@ Matrix
 .. autoclass:: genopandas.core.matrix.AnnotatedMatrix
     :members:
 
-.. autoclass:: genopandas.core.matrix.FeatureMatrix
-    :members:
-
-.. autoclass:: genopandas.core.matrix.RegionMatrix
+.. autoclass:: genopandas.core.matrix.GenomicMatrix
     :members:
 
 Tree
@@ -39,7 +36,7 @@ Datatypes
 Expression
 ~~~~~~~~~~
 
-.. autoclass:: genopandas.datatypes.rna.ExpressionMatrix
+.. autoclass:: genopandas.ngs.rna.ExpressionMatrix
     :members:
 
 Util

@@ -1,9 +1,9 @@
 import numpy as np
 
-from genopandas.core.matrix import FeatureMatrix
+from genopandas.core.matrix import AnnotatedMatrix
 
 
-class ExpressionMatrix(FeatureMatrix):
+class ExpressionMatrix(AnnotatedMatrix):
     def normalize(self, size_factors=None, log2=False):
         """Normalizes expression counts for sequencing depth."""
 
