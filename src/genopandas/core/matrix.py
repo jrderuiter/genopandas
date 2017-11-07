@@ -153,31 +153,36 @@ class AnnotatedMatrix(DfWrapper):
         sample_order = None if sample_data is None else sample_data.index
         feat_order = None if feature_data is None else feature_data.index
 
+        if check_missing:
+            cls._check_missing(values, sample_order, axis='samples')
+            cls._check_missing(values, feat_order, axis='features')
+
         values = values.reindex(
             columns=sample_order, index=feat_order, copy=False)
-
-        # Check if we introduced any missing samples.
-        if check_missing:
-            cls._check_missing(values, axis=0)
-            cls._check_missing(values, axis=1)
 
         return values
 
     @staticmethod
-    def _check_missing(values, axis=0):
+    def _check_missing(values, order, axis):
         """Checks for missing samples/features in matrix (represented as full
            rows/columns of nan values in the matrix after the reindex).
         """
 
-        mask = values.isnull().all(axis=axis)
+        # If order is None, the value matrix is leading
+        # so we can skip this check anyway.
+        if order is not None:
 
-        if mask.any():
-            missing = set(mask.loc[mask].index)
-            entry_name = 'samples' if axis == 0 else 'features'
+            if axis == 'samples':
+                index = values.columns
+            elif axis == 'features':
+                index = values.index
+            else:
+                raise ValueError('Unknown value for axis {!r}'.format(axis))
 
-            raise ValueError(
-                'Missing {} {!r} in axis {}'
-                .format(entry_name, missing, axis))  # yapf: disable
+            missing = set(order) - set(index)
+
+            if missing:
+                raise ValueError('Missing {} {!r}'.format(axis, missing))
 
     def rename(self, index=None, columns=None):
         """Rename samples/features in the matrix."""
