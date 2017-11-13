@@ -8,8 +8,7 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import toolz
 
-from genopandas.plotting import (scatter_plot, genomic_scatter_plot,
-                                 color_annotation)
+from genopandas import plotting as gplot
 from genopandas.util.pandas_ import DfWrapper
 
 from .frame import GenomicDataFrame, GenomicSlice
@@ -40,20 +39,23 @@ class AnnotatedMatrix(DfWrapper):
 
     Attributes
     ----------
-    values : pd.DataFrame
+    values : pd.DataFrame or AnnotatedMatrix
         Matrix values.
     sample_data : pd.DataFrame
-        Sample data.
+        DataFrame containing sample annotations, whose index corresponds
+        with the columns of the matrix.
     feature_data : pd.DataFrame
-        Feature data.
+        DataFrame containing feature annotations, whose index corresponds
+        with the rows of the matrix.
 
     """
 
     def __init__(self, values, sample_data=None, feature_data=None):
         if isinstance(values, AnnotatedMatrix):
-            # Copy values from existing matrix.
-            sample_data = values.sample_data.copy()
-            feature_data = values.feature_data.copy()
+            # Copy values from existing matrix (only copies sample/feature
+            # data if these are not given explictly).
+            sample_data = sample_data or values.sample_data.copy()
+            feature_data = feature_data or values.feature_data.copy()
             values = values.values.copy()
         else:
             # Create empty annotations if none given.
@@ -314,13 +316,13 @@ class AnnotatedMatrix(DfWrapper):
         import seaborn as sns
 
         if sample_cols is not None:
-            sample_annot, _ = color_annotation(
+            sample_annot, _ = gplot.color_annotation(
                 self._sample_data[sample_cols], colors=sample_colors)
         else:
             sample_annot, _ = None, None
 
         if feature_cols is not None:
-            feature_annot, _ = color_annotation(
+            feature_annot, _ = gplot.color_annotation(
                 self._feature_data[feature_cols], colors=feature_colors)
         else:
             feature_annot, _ = None, None
@@ -346,6 +348,7 @@ class AnnotatedMatrix(DfWrapper):
         cm.ax_heatmap.set_xlabel(xlabel)
         cm.ax_heatmap.set_ylabel(ylabel)
 
+        # TODO: handle legend drawing.
         #if annot_cmap is not None:
         #    draw_legends(cm, annot_cmap, **(legend_kws or {}))
 
@@ -391,7 +394,8 @@ class AnnotatedMatrix(DfWrapper):
 
         # Draw using lmplot.
         pca_x, pca_y = ['pca_{}'.format(c) for c in components]
-        ax = scatter_plot(data=plot_data, x=pca_x, y=pca_y, ax=ax, **kwargs)
+        ax = gplot.scatter_plot(
+            data=plot_data, x=pca_x, y=pca_y, ax=ax, **kwargs)
 
         ax.set_xlabel('Component ' + str(components[0]))
         ax.set_ylabel('Component ' + str(components[1]))
@@ -439,9 +443,12 @@ class GenomicMatrix(AnnotatedMatrix):
 
     @classmethod
     def from_df(cls, values, chrom_lengths=None, **kwargs):
+        """Constructs a genomic matrix from the given DataFrame."""
+
         if not isinstance(values, GenomicDataFrame):
             values = GenomicDataFrame.from_df(
                 values, chrom_lengths=chrom_lengths)
+
         return cls(values, **kwargs)
 
     @classmethod
@@ -726,7 +733,8 @@ class GenomicMatrix(AnnotatedMatrix):
 
     def plot_sample(self, sample, ax=None, **kwargs):
         """Plots values for given sample along genomic axis."""
-        ax = genomic_scatter_plot(self._values, y=sample, ax=ax, **kwargs)
+        ax = gplot.genomic_scatter_plot(
+            self._values, y=sample, ax=ax, **kwargs)
         return ax
 
     def plot_heatmap(self,

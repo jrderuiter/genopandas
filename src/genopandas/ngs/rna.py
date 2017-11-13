@@ -4,18 +4,7 @@ from genopandas.core.matrix import AnnotatedMatrix
 
 
 class ExpressionMatrix(AnnotatedMatrix):
-    def normalize(self, size_factors=None, log2=False):
-        """Normalizes expression counts for sequencing depth."""
-
-        with np.errstate(divide="ignore"):
-            if size_factors is None:
-                size_factors = self._estimate_size_factors(self._values)
-            normalized = self._values.divide(size_factors, axis=1)
-
-        if log2:
-            normalized = np.log2(normalized + 1)
-
-        return self.__class__(normalized, sample_data=self._sample_data)
+    """Matrix containing (gene) expression values (features-by-samples)."""
 
     @classmethod
     def from_subread(cls,
@@ -33,6 +22,38 @@ class ExpressionMatrix(AnnotatedMatrix):
             index_col=0,
             sep='\t',
             **kwargs)
+
+    def normalize(self, size_factors=None, log2=False):
+        """Normalizes expression counts for sequencing depth.
+
+        Normalizes by dividing sample counts using the given (sample) size
+        factors. If no size factors are given, they are calculated using the
+        median-of-ratios approach used by DESeq2.
+
+        Parameters
+        ----------
+        size_factors : np.array
+            Array of size factors, length should be equal to the number
+            of samples.
+        log2 : bool
+            Whether to also log2-transform the normalized counts.
+
+        Returns
+        -------
+        ExpressionMatrix
+            ExpressionMatrix containing normalized counts.
+
+        """
+
+        with np.errstate(divide="ignore"):
+            if size_factors is None:
+                size_factors = self._estimate_size_factors(self._values)
+            normalized = self._values.divide(size_factors, axis=1)
+
+        if log2:
+            normalized = np.log2(normalized + 1)
+
+        return self._constructor(normalized)
 
     @staticmethod
     def _estimate_size_factors(counts):
