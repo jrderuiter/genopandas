@@ -77,7 +77,7 @@ def genomic_scatter_plot(data,
     # Order hue by data chromosome order if hue == "chromosome"
     # and no specific order is given.
     if hue == 'chromosome' and hue_order is None:
-        hue_order = data.gi.chromosomes
+        hue_order = data.gloc.chromosomes
 
     # Plot using scatter.
     default_plot_kws = {'markersize': 1}
@@ -180,7 +180,7 @@ def genomic_step_plot(data,
     # Order hue by data chromosome order if hue == "chromosome" and
     # no specific order is given.
     if hue == 'chromosome' and hue_order is None:
-        hue_order = data.gi.chromosomes
+        hue_order = data.gloc.chromosomes
 
     # Plot using step.
     default_step_kws = {'where': 'post'}

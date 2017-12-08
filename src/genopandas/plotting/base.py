@@ -77,10 +77,21 @@ def scatter_plot(data,
         data = data.assign(_color=apply_palette(
             data[hue], palette, color=color, order=hue_order))
 
-        for (label, color), grp in data.groupby([hue, '_color']):
+        # Group data by label/color.
+        groups = {
+            label: (color, grp)
+            for (label, color), grp in data.groupby([hue, '_color'])
+        }
+
+        # Plot groups in hue order.
+        hue_order = hue_order or set(groups.keys())
+
+        for label in hue_order:
+            color, grp = groups[label]
             ax.plot(grp[x], grp[y], label=label, color=color, **plot_kws)
 
         if legend:
+            # Draw legend.
             default_legend_kws = {
                 'frameon': True,
                 'title': hue,

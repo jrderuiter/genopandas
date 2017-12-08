@@ -9,25 +9,48 @@ class CnvValueMatrix(GenomicMatrix):
     """CnvMatrix containing (segmented) logratio values (positions-by-samples).
     """
 
-    @classmethod
-    def as_segments(cls, values):
+    def as_segments(self, drop_columns=False):
         """Returns matrix as segments (consecutive stetches with same value).
 
         Assumes that values have already been segmented, i.e. that bins
         in the same segment have been assigned same numeric value.
+
+        Parameters
+        ----------
+        drop_columns : bool
+            Whether to drop chromosome, start, end and sample columns
+            after setting the index.
+
+        Returns
+        -------
+        GenomicDataFrame
+            GenomicDataFrame describing genomic segments. Indexed by
+            chromosome, start, end and sample.
+
+            Note that the sample index is included to avoid duplicate index
+            errors when reindexing in cases where samples have identical
+            segments.
         """
-        values = values.sort_index()
+
+        values = self._values.sort_index()
 
         # Get segments per sample.
-        segments = pd.concat(
-            (cls._segments_for_sample(sample_values)
+        segment_data = pd.concat(
+            (self._segments_for_sample(sample_values)
              for _, sample_values in values.items()),
             axis=0, ignore_index=True)  # yapf: disable
 
-        segments = segments.set_index(
-            ['chromosome', 'start', 'end'], drop=False)
+        # Set index. Note that we add sample here, to avoid running into
+        # duplicate index errors when re-indexing later down the road.
+        # This is a bit of a hack, but GenomicDataFrames shouldn't suffer
+        # from having any extra index entries.
+        segment_data = segment_data.set_index(
+            ['chromosome', 'start', 'end', 'sample'], drop=drop_columns)
 
-        return GenomicDataFrame(segments)
+        segments = GenomicDataFrame(segment_data)
+        segments = segments.gloc[self.gloc.chromosomes]
+
+        return segments
 
     @staticmethod
     def _segments_for_sample(sample_values):
@@ -65,6 +88,26 @@ class CnvValueMatrix(GenomicMatrix):
         segments['sample'] = sample
 
         return segments.reset_index(drop=True)
+
+    def to_igv(self, file_path):
+        """Saves data for viewing in IGV."""
+
+        igv_data = self._values.reset_index()
+
+        # Rename index columns.
+        igv_columns = ['Chromosome', 'Start', 'End']
+        column_map = dict(zip(self._values.index.names, igv_columns))
+
+        igv_data = igv_data.rename(columns=column_map)
+
+        # Add 'Feature' column.
+        feature_names = ['P{}'.format(i + 1) for i in range(igv_data.shape[0])]
+        igv_data.insert(4, 'Feature', feature_names)
+
+        # Write file.
+        with open(file_path, 'w') as file_:
+            print('#type=COPY_NUMBER', file=file_)
+            igv_data.to_csv(file_, sep='\t', index=False, header=True)
 
 
 class CnvCallMatrix(AnnotatedMatrix):

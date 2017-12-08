@@ -280,12 +280,12 @@ class GenomicIndexer(object):
         """
 
         if isinstance(item, list):
-            subset = self._gdf.reindex(index=[item], level=0)
+            subset = self._gdf.reindex(index=item, level=0)
 
             # Subset lengths.
             prev_lengths = subset.chromosome_lengths
             subset.chromosome_lengths = OrderedDict(
-                (k, prev_lengths[k]) for k in item)  # yapf: disable
+                (k, prev_lengths[k]) for k in set(item))  # yapf: disable
 
             return subset
 

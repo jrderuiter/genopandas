@@ -54,8 +54,8 @@ class AnnotatedMatrix(DfWrapper):
         if isinstance(values, AnnotatedMatrix):
             # Copy values from existing matrix (only copies sample/feature
             # data if these are not given explictly).
-            sample_data = sample_data or values.sample_data.copy()
-            feature_data = feature_data or values.feature_data.copy()
+            sample_data = sample_data or values.sample_data
+            feature_data = feature_data or values.feature_data
             values = values.values.copy()
         else:
             # Create empty annotations if none given.
@@ -66,11 +66,11 @@ class AnnotatedMatrix(DfWrapper):
                 feature_data = pd.DataFrame({}, index=values.index)
 
             # Check {sample,feature}_data.
-            assert (values.shape[1] == sample_data.shape[0]
-                    and all(values.columns == sample_data.index))
+            # assert (values.shape[1] == sample_data.shape[0]
+            #         and all(values.columns == sample_data.index))
 
-            assert (values.shape[0] == feature_data.shape[0]
-                    and all(values.index == feature_data.index))
+            # assert (values.shape[0] == feature_data.shape[0]
+            #         and all(values.index == feature_data.index))
 
             # Check if all matrix columns are numeric.
             for col_name, col_values in values.items():
@@ -80,21 +80,18 @@ class AnnotatedMatrix(DfWrapper):
 
         super().__init__(values)
 
-        self._sample_data = sample_data
-        self._feature_data = feature_data
+        self._sample_data = sample_data.reindex(index=values.columns)
+        self._feature_data = feature_data.reindex(index=values.index)
 
     def _constructor(self, values):
         """Constructor that attempts to build new instance
            from given values."""
 
         if isinstance(values, pd.DataFrame):
-            sample_data = self._sample_data.reindex(index=values.columns)
-            feature_data = self._feature_data.reindex(index=values.index)
-
             return self.__class__(
                 values.copy(),
-                sample_data=sample_data,
-                feature_data=feature_data)
+                sample_data=self._sample_data,
+                feature_data=self._feature_data)
 
         return values
 
@@ -102,9 +99,19 @@ class AnnotatedMatrix(DfWrapper):
     def feature_data(self):
         return self._feature_data
 
+    @feature_data.setter
+    def feature_data(self, value):
+        value = value.reindex(index=self._values.index)
+        self._feature_data = value
+
     @property
     def sample_data(self):
         return self._sample_data
+
+    @sample_data.setter
+    def sample_data(self, value):
+        value = value.reindex(index=self._values.columns)
+        self._sample_data = value
 
     @classmethod
     def from_csv(cls,
@@ -114,12 +121,28 @@ class AnnotatedMatrix(DfWrapper):
                  sample_mapping=None,
                  feature_mapping=None,
                  drop_cols=None,
+                 read_data_kws=None,
                  **kwargs):
 
         default_kwargs = {'index_col': 0}
         kwargs = toolz.merge(default_kwargs, kwargs)
 
         values = pd.read_csv(str(file_path), **kwargs)
+
+        # If sample/feature_data are not dataframes, assume they are
+        # file paths or objects and try to read from them.
+        read_data_kws_default = {
+            'sep': kwargs.pop('sep', None),
+            'index_col': 0
+        }
+        read_data_kws = toolz.merge(read_data_kws_default, read_data_kws or {})
+
+        if not (sample_data is None or isinstance(sample_data, pd.DataFrame)):
+            sample_data = pd.read_csv(sample_data, **read_data_kws)
+
+        if not (feature_data is None
+                or isinstance(feature_data, pd.DataFrame)):
+            feature_data = pd.read_csv(feature_data, **read_data_kws)
 
         values = cls._preprocess_values(
             values,
@@ -138,8 +161,7 @@ class AnnotatedMatrix(DfWrapper):
                            feature_data=None,
                            sample_mapping=None,
                            feature_mapping=None,
-                           drop_cols=None,
-                           check_missing=True):
+                           drop_cols=None):
         """Preprocesses matrix to match given sample/feature data."""
 
         # Drop extra columns (if needed).
@@ -155,36 +177,29 @@ class AnnotatedMatrix(DfWrapper):
         sample_order = None if sample_data is None else sample_data.index
         feat_order = None if feature_data is None else feature_data.index
 
-        if check_missing:
-            cls._check_missing(values, sample_order, axis='samples')
-            cls._check_missing(values, feat_order, axis='features')
-
         values = values.reindex(
             columns=sample_order, index=feat_order, copy=False)
 
         return values
 
-    @staticmethod
-    def _check_missing(values, order, axis):
-        """Checks for missing samples/features in matrix (represented as full
-           rows/columns of nan values in the matrix after the reindex).
-        """
+    def to_csv(self,
+               file_path,
+               sample_data_path=None,
+               feature_data_path=None,
+               **kwargs):
+        """Writes matrix values to a csv file, using pandas' to_csv method."""
 
-        # If order is None, the value matrix is leading
-        # so we can skip this check anyway.
-        if order is not None:
+        # Write matrix values.
+        self._values.to_csv(file_path, **kwargs)
 
-            if axis == 'samples':
-                index = values.columns
-            elif axis == 'features':
-                index = values.index
-            else:
-                raise ValueError('Unknown value for axis {!r}'.format(axis))
+        # Write sample/feature data if paths given.
+        if sample_data_path is not None:
+            self._sample_data.to_csv(
+                sample_data_path, sep=kwargs.pop('sep', None), index=True)
 
-            missing = set(order) - set(index)
-
-            if missing:
-                raise ValueError('Missing {} {!r}'.format(axis, missing))
+        if feature_data_path is not None:
+            self._feature_data.to_csv(
+                feature_data_path, sep=kwargs.pop('sep', None), index=True)
 
     def rename(self, index=None, columns=None):
         """Rename samples/features in the matrix."""
@@ -194,12 +209,12 @@ class AnnotatedMatrix(DfWrapper):
         if index is not None:
             feature_data = self._feature_data.rename(index=index)
         else:
-            feature_data = self._feature_data.copy()
+            feature_data = self._feature_data
 
         if columns is not None:
             sample_data = self._sample_data.rename(index=columns)
         else:
-            sample_data = self._sample_data.copy()
+            sample_data = self._sample_data
 
         return self.__class__(
             renamed, feature_data=feature_data, sample_data=sample_data)
@@ -275,9 +290,7 @@ class AnnotatedMatrix(DfWrapper):
         values = self._values.reindex(columns=sample_data.index)
 
         return self.__class__(
-            values,
-            sample_data=sample_data,
-            feature_data=self._feature_data.copy())
+            values, sample_data=sample_data, feature_data=self._feature_data)
 
     def dropna_samples(self, subset=None, how='any', thresh=None):
         """Drops samples with NAs in sample_data."""
@@ -287,9 +300,7 @@ class AnnotatedMatrix(DfWrapper):
         values = self._values.reindex(columns=sample_data.index)
 
         return self.__class__(
-            values,
-            sample_data=sample_data,
-            feature_data=self._feature_data.copy())
+            values, sample_data=sample_data, feature_data=self._feature_data)
 
     def __eq__(self, other):
         if not isinstance(other, AnnotatedMatrix):
@@ -354,9 +365,12 @@ class AnnotatedMatrix(DfWrapper):
 
         return cm
 
-    def plot_pca(self, components=(1, 2), ax=None, by_features=False,
-                 **kwargs):
-        """Plots PCA of samples."""
+    def pca(self,
+            n_components=None,
+            axis='columns',
+            transform=False,
+            with_annotation=False):
+        """Performs PCA on matrix."""
 
         try:
             from sklearn.decomposition import PCA
@@ -365,57 +379,65 @@ class AnnotatedMatrix(DfWrapper):
                               'perform PCA analyses')
 
         # Fit PCA and transform expression.
-        n_components = max(components)
+        pca = PCA(n_components=n_components)
 
-        pca = PCA(n_components=max(components))
-
-        if by_features:
-            # Do PCA on features.
-            transform = pca.fit_transform(self._values.values)
-
-            transform = pd.DataFrame(
-                transform,
-                columns=['pca_{}'.format(i + 1) for i in range(n_components)],
-                index=self.values.index)
-
-            # Assemble plot data.
-            plot_data = pd.concat([transform, self._feature_data], axis=1)
+        if axis == 1 or axis == 'columns':
+            values = self._values.T
+            annotation = self._sample_data
+        elif axis == 0 or axis == 'index':
+            values = self._values
+            annotation = self._feature_data
         else:
-            # Do PCA on samples.
-            transform = pca.fit_transform(self._values.values.T)
+            raise ValueError('Unknown value for axis')
 
-            transform = pd.DataFrame(
-                transform,
+        pca.fit(values.values)
+
+        if transform:
+            transformed = pca.transform(values.values)
+
+            n_components = transformed.shape[1]
+
+            transformed = pd.DataFrame(
+                transformed,
                 columns=['pca_{}'.format(i + 1) for i in range(n_components)],
-                index=self.values.columns)
+                index=values.index)
 
-            # Assemble plot data.
-            plot_data = pd.concat([transform, self._sample_data], axis=1)
+            if with_annotation:
+                transformed = pd.concat([transformed, annotation], axis=1)
+
+            return pca, transformed
+        else:
+            return pca
+
+    def plot_pca(self, components=(1, 2), axis='columns', ax=None, **kwargs):
+        """Plots PCA of samples."""
+
+        pca, transformed = self.pca(
+            n_components=max(components),
+            axis=axis,
+            transform=True,
+            with_annotation=True)
 
         # Draw using lmplot.
         pca_x, pca_y = ['pca_{}'.format(c) for c in components]
         ax = gplot.scatter_plot(
-            data=plot_data, x=pca_x, y=pca_y, ax=ax, **kwargs)
+            data=transformed, x=pca_x, y=pca_y, ax=ax, **kwargs)
 
-        ax.set_xlabel('Component ' + str(components[0]))
-        ax.set_ylabel('Component ' + str(components[1]))
+        var = pca.explained_variance_ratio_[components[0] - 1] * 100
+        ax.set_xlabel('Component {} ({:3.1f}%)'.format(components[0], var))
+
+        var = pca.explained_variance_ratio_[components[1] - 1] * 100
+        ax.set_ylabel('Component {} ({:3.1f}%)'.format(components[1], var))
 
         return ax
 
-    def plot_pca_variance(self, n_components=None, ax=None, by_features=False):
+    def plot_pca_variance(self, n_components=None, axis='columns', ax=None):
         """Plots variance explained by PCA components."""
 
         import matplotlib.pyplot as plt
         import seaborn as sns
 
-        try:
-            from sklearn.decomposition import PCA
-        except ImportError:
-            raise ImportError('Scikit-learn must be installed to '
-                              'perform PCA analyses')
-
-        pca = PCA(n_components=n_components)
-        pca.fit(self._values.values.T if by_features else self._values.values)
+        pca = self.pca(n_components=n_components, axis=axis, transform=False)
 
         if ax is None:
             _, ax = plt.subplots()
@@ -429,6 +451,83 @@ class AnnotatedMatrix(DfWrapper):
         sns.despine(ax=ax)
 
         return ax
+
+    def plot_feature(self, feature, group=None, kind='box', ax=None, **kwargs):
+        """Plots distribution of expression for given feature."""
+
+        import seaborn as sns
+
+        if group is not None and self._sample_data.shape[1] == 0:
+            raise ValueError('Grouping not possible without sample data')
+
+        # Determine plot type.
+        plot_funcs = {
+            'box': sns.boxplot,
+            'swarm': sns.swarmplot,
+            'violin': sns.violinplot
+        }
+
+        try:
+            plot_func = plot_funcs[kind]
+        except KeyError:
+            raise ValueError('Unknown plot type {!r}'.format(kind))
+
+        # Assemble plot data (sample_data + expression values).
+        values = self._values.loc[feature].to_frame(name='value')
+        plot_data = pd.concat([values, self._sample_data], axis=1)
+
+        # Plot expression.
+        ax = plot_func(data=plot_data, x=group, y='value', ax=ax, **kwargs)
+
+        ax.set_title(feature)
+        ax.set_ylabel('Value')
+
+        return ax
+
+    @classmethod
+    def concat(cls, matrices, axis):
+        """Concatenates matrices along given axis."""
+
+        # Collect value/sample/feature data.
+        tuples = ((mat.values, mat.sample_data, mat.feature_data)
+                  for mat in matrices)
+        value_list, sample_list, feat_list = zip(*tuples)
+
+        # Merge values.
+        values = pd.concat(value_list, axis=axis)
+
+        # Merge sample/feature data.
+        if axis == 'index' or axis == 0:
+            sample_data = pd.concat(sample_list, axis='columns')
+            feature_data = pd.concat(feat_list, axis='index')
+        elif axis == 'columns' or axis == 1:
+            sample_data = pd.concat(sample_list, axis='index')
+            feature_data = pd.concat(feat_list, axis='columns')
+        else:
+            raise ValueError('Unknown value for axis')
+
+        return cls(values, sample_data=sample_data, feature_data=feature_data)
+
+    def drop_duplicate_indices(self, axis='index', keep='first'):
+        """Drops duplicate indices along given axis."""
+
+        if axis == 'index':
+            mask = ~self._values.index.duplicated(keep=keep)
+            values = self._values.loc[mask]
+
+            sample_data = self._sample_data
+            feature_data = self._feature_data.loc[mask]
+        elif axis == 'columns':
+            mask = ~self._values.columns.duplicated(keep=keep)
+            values = self._values.loc[:, mask]
+
+            sample_data = self._sample_data.loc[mask]
+            feature_data = self._feature_data
+        else:
+            raise ValueError('Unknown value for axis')
+
+        return self.__class__(
+            values.copy(), sample_data=sample_data, feature_data=feature_data)
 
 
 class GenomicMatrix(AnnotatedMatrix):
@@ -461,6 +560,7 @@ class GenomicMatrix(AnnotatedMatrix):
                  feature_mapping=None,
                  drop_cols=None,
                  chrom_lengths=None,
+                 read_data_kws=None,
                  **kwargs):
         """Reads values from a csv file."""
 
@@ -474,6 +574,21 @@ class GenomicMatrix(AnnotatedMatrix):
 
         values = pd.read_csv(file_path, dtype=dtype, **kwargs)
         values = values.set_index(index_col)
+
+        # If sample/feature_data are not dataframes, assume they are
+        # file paths or objects and try to read from them.
+        read_data_kws_default = {
+            'sep': kwargs.pop('sep', None),
+            'index_col': 0
+        }
+        read_data_kws = toolz.merge(read_data_kws_default, read_data_kws or {})
+
+        if not (sample_data is None or isinstance(sample_data, pd.DataFrame)):
+            sample_data = pd.read_csv(sample_data, **read_data_kws)
+
+        if not (feature_data is None
+                or isinstance(feature_data, pd.DataFrame)):
+            feature_data = pd.read_csv(feature_data, **read_data_kws)
 
         values = cls._preprocess_values(
             values,
@@ -502,6 +617,7 @@ class GenomicMatrix(AnnotatedMatrix):
                            index_regex=RANGED_REGEX,
                            is_one_based=False,
                            is_inclusive=False,
+                           read_data_kws=None,
                            **kwargs):
         """Reads values from a csv file with a condensed index."""
 
@@ -512,6 +628,21 @@ class GenomicMatrix(AnnotatedMatrix):
             index_regex,
             is_one_based=is_one_based,
             is_inclusive=is_inclusive)
+
+        # If sample/feature_data are not dataframes, assume they are
+        # file paths or objects and try to read from them.
+        read_data_kws_default = {
+            'sep': kwargs.pop('sep', None),
+            'index_col': 0
+        }
+        read_data_kws = toolz.merge(read_data_kws_default, read_data_kws or {})
+
+        if not (sample_data is None or isinstance(sample_data, pd.DataFrame)):
+            sample_data = pd.read_csv(sample_data, **read_data_kws)
+
+        if not (feature_data is None
+                or isinstance(feature_data, pd.DataFrame)):
+            feature_data = pd.read_csv(feature_data, **read_data_kws)
 
         values = cls._preprocess_values(
             values,
@@ -609,9 +740,7 @@ class GenomicMatrix(AnnotatedMatrix):
         feature_data = self._feature_data.reindex(index=expanded.index)
 
         return self.__class__(
-            expanded,
-            sample_data=self._sample_data.copy(),
-            feature_data=feature_data)
+            expanded, sample_data=self._sample_data, feature_data=feature_data)
 
     @staticmethod
     def _expand(values):
@@ -628,6 +757,18 @@ class GenomicMatrix(AnnotatedMatrix):
         bin_size = values.index[0][2] - values.index[0][1]
 
         # TODO: Warn if bin_size is 1? (Probably positioned data).
+
+        # Check inferred bin size.
+        starts = values.index.get_level_values(1)
+        ends = values.index.get_level_values(2)
+        diffs = ends - starts
+
+        if not all(diffs == bin_size):
+            raise ValueError('Bins do not match inferred bin size')
+
+        # Check if following bins match inferred bin size.
+        if not all(np.mod(np.diff(starts), bin_size) == 0):
+            raise ValueError('Following bins do not match inferred bin size')
 
         indices = list(
             itertools.chain.from_iterable(
@@ -660,9 +801,7 @@ class GenomicMatrix(AnnotatedMatrix):
         feature_data = self._feature_data.reindex(index=imputed.index)
 
         return self.__class__(
-            imputed,
-            sample_data=self._sample_data.copy(),
-            feature_data=feature_data)
+            imputed, sample_data=self._sample_data, feature_data=feature_data)
 
     def resample(self, bin_size, start=None, agg='mean'):
         """Resamples values at given interval by binning."""
@@ -680,7 +819,7 @@ class GenomicMatrix(AnnotatedMatrix):
         return self.__class__(
             GenomicDataFrame(
                 resampled, chrom_lengths=self._values.chromosome_lengths),
-            sample_data=self._sample_data.copy())
+            sample_data=self._sample_data)
 
     @staticmethod
     def _resample_chromosome(values, bin_size, start=None, agg='mean'):
