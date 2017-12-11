@@ -261,6 +261,16 @@ class GenomicDataFrame(pd.DataFrame):
 
         return offsets
 
+    def reset_index(self, level=None, drop=False, col_level=0, col_fill=''):
+        """Mirrors pd.DataFrame.reset_index, but returns a standard DataFrame
+        instead of a GenomicDataFrame, as the (genomic) index is being dropped.
+        """
+
+        reset_values = super().reset_index(
+            level=level, drop=drop, col_level=col_level, col_fill=col_fill)
+
+        return pd.DataFrame(reset_values)
+
 
 class GenomicIndexer(object):
     """Base GenomicIndexer class used to index GenomicDataFrames."""
