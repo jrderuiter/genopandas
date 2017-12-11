@@ -848,6 +848,26 @@ class GenomicMatrix(AnnotatedMatrix):
 
         return resampled
 
+    def rename_chromosomes(self, mapping):
+        """Returns copy of matrix with renamed chromosomes."""
+
+        # Map chromosomes.
+        chrom = self._values.gloc.chromosomes
+        new_chrom = chrom.map(lambda s: mapping.get(s, s))
+
+        # Build new value frame with new index.
+        new_index = pd.MultiIndex.from_arrays(
+            [new_chrom, self._values.gloc.start, self._values.gloc.end],
+            names=self._values.index.names)
+
+        new_values = self._values.copy()
+        new_values.index = new_index
+
+        return self.__class__(
+            values=new_values,
+            sample_data=self.sample_data,
+            feature_data=self.feature_data)
+
     def annotate(self, features, feature_id='gene_id'):
         """Annotates values for given features."""
 

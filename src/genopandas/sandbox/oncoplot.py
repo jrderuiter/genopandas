@@ -634,6 +634,8 @@ class OncoprintPlotter(object):
             yticklabels=True)
 
         ax.set_xticks([])
+        ax.set_xlabel('')
+
         plt.setp(ax.get_yticklabels(), rotation=0)
 
     @staticmethod
