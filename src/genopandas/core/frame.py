@@ -271,6 +271,24 @@ class GenomicDataFrame(pd.DataFrame):
 
         return pd.DataFrame(reset_values)
 
+    def rename_chromosomes(self, mapping):
+        """Returns copy with renamed chromosomes."""
+
+        if callable(mapping):
+            map_func = mapping
+        else:
+            map_func = lambda s: mapping.get(s, s)
+
+        # Map chromosomes.
+        chrom_col, start_col, end_col = self.index.names
+
+        new_values = self.reset_index()
+        new_values[chrom_col] = new_values[chrom_col].map(map_func)
+
+        new_values.set_index([chrom_col, start_col, end_col], inplace=True)
+
+        return self.__class__(new_values)
+
 
 class GenomicIndexer(object):
     """Base GenomicIndexer class used to index GenomicDataFrames."""
@@ -292,10 +310,13 @@ class GenomicIndexer(object):
         if isinstance(item, list):
             subset = self._gdf.reindex(index=item, level=0)
 
+            # Remove any duplicates.
+            items = list(OrderedDict.fromkeys(item))
+
             # Subset lengths.
             prev_lengths = subset.chromosome_lengths
             subset.chromosome_lengths = OrderedDict(
-                (k, prev_lengths[k]) for k in set(item))  # yapf: disable
+                (k, prev_lengths[k]) for k in items)  # yapf: disable
 
             return subset
 

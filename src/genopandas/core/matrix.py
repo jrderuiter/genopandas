@@ -851,26 +851,10 @@ class GenomicMatrix(AnnotatedMatrix):
     def rename_chromosomes(self, mapping):
         """Returns copy of matrix with renamed chromosomes."""
 
-        if callable(mapping):
-            map_func = mapping
-        else:
-            map_func = lambda s: mapping.get(s, s)
-
-        # Map chromosomes.
-        chrom_col, start_col, end_col = self._values.index.names
-
-        new_values = self._values.reset_index()
-        new_values[chrom_col] = new_values[chrom_col].map(map_func)
-
-        new_values.set_index([chrom_col, start_col, end_col], inplace=True)
-
-        # Return new matrix.
-        new_matrix = self.__class__(
-            values=new_values,
+        return self.__class__(
+            values=self._values.rename_chromosomes(mapping),
             sample_data=self.sample_data,
             feature_data=self.feature_data)
-
-        return new_matrix
 
     def annotate(self, features, feature_id='gene_id'):
         """Annotates values for given features."""

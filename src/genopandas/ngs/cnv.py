@@ -9,7 +9,7 @@ class CnvValueMatrix(GenomicMatrix):
     """CnvMatrix containing (segmented) logratio values (positions-by-samples).
     """
 
-    def as_segments(self, drop_columns=False):
+    def as_segments(self, drop_columns=True):
         """Returns matrix as segments (consecutive stetches with same value).
 
         Assumes that values have already been segmented, i.e. that bins
