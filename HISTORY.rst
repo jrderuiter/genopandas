@@ -2,7 +2,7 @@
 History
 =======
 
-0.0.1
------
+0.1
+---
 
-* Initial development version.
+* Initial release with GenomicsDataFrame + AnnotatedMatrix classes.

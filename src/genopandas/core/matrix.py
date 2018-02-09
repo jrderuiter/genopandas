@@ -225,42 +225,29 @@ class AnnotatedMatrix(DfWrapper):
              value_name='value'):
         """Melts values into 'tidy' format, optionally including annotation."""
 
+        feat_col = self._feature_data.index.name or 'feature'
+        sample_col = self._sample_data.index.name or 'sample'
+
         values_long = pd.melt(
-            self._values.reset_index(),
-            id_vars=self._values.index.name,
-            var_name='sample',
+            self._values.rename_axis(feat_col).reset_index(),
+            id_vars=feat_col,
+            var_name=sample_col,
             value_name=value_name)
 
         if with_sample_data and self._sample_data.shape[1] > 0:
-            # Merge with sample data.
-            sample_data = self._sample_data.reset_index()
+            sample_data = (self._sample_data.rename_axis(sample_col)
+                           .reset_index())
 
-            # Rename sample column if needed.
-            sample_col = self._sample_data.index.name
-
-            if sample_col != 'sample':
-                sample_data = sample_data.rename(
-                    columns={sample_col: 'sample'})
-
-            # Merge with annotation.
             values_long = pd.merge(
-                values_long, sample_data, how='left', on='sample')
+                values_long, sample_data, how='left', on=sample_col)
 
         if with_feature_data and self._feature_data.shape[1] > 0:
-            # Merge with feature data.
-            feature_data = self._feature_data.reset_index()
-
-            # Rename feature column if needed.
-            feat_col = self._sample_data.index.name
-            feat_col_values = self._values.index.name
-
-            if feat_col != feat_col_values:
-                feature_data = feature_data.rename(
-                    columns={feat_col: feat_col_values})
+            feature_data = (self._feature_data.rename_axis(feat_col)
+                            .reset_index())
 
             # Merge with annotation.
             values_long = pd.merge(
-                values_long, feature_data, how='left', on=feat_col_values)
+                values_long, feature_data, how='left', on=feat_col)
 
         return values_long
 
@@ -381,10 +368,10 @@ class AnnotatedMatrix(DfWrapper):
         # Fit PCA and transform expression.
         pca = PCA(n_components=n_components)
 
-        if axis == 1 or axis == 'columns':
+        if axis in {1, 'columns', 'samples'}:
             values = self._values.T
             annotation = self._sample_data
-        elif axis == 0 or axis == 'index':
+        elif axis in {0, 'index', 'features'}:
             values = self._values
             annotation = self._feature_data
         else:

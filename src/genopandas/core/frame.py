@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 import math
+import re
 
 from natsort import natsorted
 import numpy as np
@@ -22,28 +23,18 @@ class GenomicDataFrame(pd.DataFrame):
     Constructing from scratch:
 
     >>> df = pd.DataFrame.from_records(
-    ...    [('1', 10, 20), ('2', 10, 20), ('2', 30, 40)],
+    ...    [('1', 10, 20, 'a'), ('2', 10, 20, 'b'), ('2', 30, 40, 'c')],
     ...    columns=['chromosome', 'start', 'end'])
+    >>> df.set_index(['chromosome', 'start', 'end'])
     >>> GenomicDataFrame(df)
-
-    Constructing with non-default columns:
-
-    >>> df = pd.DataFrame.from_records(
-    ...    [('1', 10, 20), ('2', 10, 20), ('2', 30, 40)],
-    ...    columns=['chrom', 'chromStart', 'chromEnd'])
-    >>> GenomicDataFrame(
-    ...    df,
-    ...    chromosome_col='chrom',
-    ...    start_col='start',
-    ...    end_col='end')
 
     Reading from a GTF file:
 
-    >>> GenomicDataFrame.from_gtf('/path/to/reference.gtf.gz')
+    >>> GenomicDataFrame.from_gtf('/path/to/reference.gtf')
 
-    Querying by genomic position:
+    Querying by a genomic range:
 
-    >>> genomic_df.gi.search('2', 30, 50)
+    >>> genomic_df.gloc['2'][30:50]
 
     """
 
@@ -163,6 +154,44 @@ class GenomicDataFrame(pd.DataFrame):
     @classmethod
     def from_gtf(cls, gtf_path, filter_=None):
         """Creates a GenomicDataFrame from a GTF file."""
+
+        if (gtf_path.suffixes[-1] == '.gz' and
+            gtf_path.with_suffix('.gz.tbi').exists()):
+            gdf = cls._from_gtf_pysam(gtf_path, filter_=filter_)
+        else:
+            gdf = cls._from_gtf_pandas(gtf_path, filter_=filter_)
+
+        return gdf
+
+    @classmethod
+    def _from_gtf_pandas(cls, gtf_path, filter_=None):
+        """Reads GTF directly using pandas."""
+
+        # Read gtf data.
+        data = pd.read_csv(
+            gtf_path, sep='\t', header=None, index_col=None,
+            names=('contig', 'source', 'feature', 'start', 'end', 'score',
+                   'strand', 'frame', 'attributes'),
+            dtype={'contig': str})
+
+        # Expand attributes.
+        regex = re.compile(r'(?P<key>\w+) "(?P<value>\w+)"')
+
+        rows = (dict(regex.findall(el)) for el in data['attributes'])
+        attr_data = pd.DataFrame.from_records(rows)
+
+        data = pd.concat([data.drop('attributes', axis=1), attr_data], axis=1)
+        data = data.set_index(['contig', 'start', 'end'], drop=False)
+
+        # Filter rows if filter_ is given.
+        if filter_ is not None:
+            data = data.query(filter_)
+
+        return cls(data)
+
+    @classmethod
+    def _from_gtf_pysam(cls, gtf_path, filter_=None):
+        """Reads GTF more efficiently using pysam."""
 
         try:
             import pysam
@@ -308,7 +337,13 @@ class GenomicIndexer(object):
         """
 
         if isinstance(item, list):
-            subset = self._gdf.reindex(index=item, level=0)
+            # Add extra index level to enforce uniqueness.
+            augmented = self._gdf.set_index(
+                self._gdf.groupby(level=0).cumcount(), append=True)
+
+            # Reindex and drop added level.
+            subset = augmented.reindex(index=item, level=0)
+            subset.index = subset.index.droplevel(subset.index.nlevels - 1)
 
             # Remove any duplicates.
             items = list(OrderedDict.fromkeys(item))

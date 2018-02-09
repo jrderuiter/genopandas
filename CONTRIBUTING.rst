@@ -64,11 +64,10 @@ Ready to contribute? Here's how to set up `genopandas` for local development.
 
     $ git clone git@github.com:your_name_here/genopandas.git
 
-3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
+3. Install your local copy into a conda environment. Assuming you have conda installed, this is how you set up your fork for local development::
 
-    $ mkvirtualenv genopandas
-    $ cd genopandas/
-    $ pip install .[dev]
+    $ conda env create --file environment.yaml
+    $ pip install -e .
 
 4. Create a branch for local development::
 

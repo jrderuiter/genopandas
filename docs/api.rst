@@ -2,10 +2,12 @@
 API
 ===
 
-Core
+API documentation for the various genopandas modules/classes.
+
+core
 ----
 
-Frame
+frame
 ~~~~~
 
 .. autoclass:: genopandas.core.frame.GenomicDataFrame
@@ -14,7 +16,7 @@ Frame
 .. autoclass:: genopandas.core.frame.GenomicIndexer
     :members:
 
-Matrix
+matrix
 ~~~~~~
 
 .. autoclass:: genopandas.core.matrix.AnnotatedMatrix
@@ -23,22 +25,26 @@ Matrix
 .. autoclass:: genopandas.core.matrix.GenomicMatrix
     :members:
 
-Tree
+tree
 ~~~~
 
 .. autoclass:: genopandas.core.tree.GenomicIntervalTree
     :members:
 
+ngs
+---
 
-Datatypes
----------
+cnv
+~~~
 
-Expression
-~~~~~~~~~~
+.. autoclass:: genopandas.ngs.cnv.CnvValueMatrix
+    :members:
+
+.. autoclass:: genopandas.ngs.cnv.CnvCallMatrix
+    :members:
+
+rna
+~~~
 
 .. autoclass:: genopandas.ngs.rna.ExpressionMatrix
     :members:
-
-Util
-----
-
