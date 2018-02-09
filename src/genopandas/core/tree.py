@@ -39,19 +39,19 @@ class GenomicIntervalTree(collections.MutableMapping):
     # pylint: disable=too-many-arguments
     def search(self,
                chromosome,
-               begin,
+               start,
                end=None,
                strict_left=False,
                strict_right=False):
         """Searches the tree for objects within given range."""
 
-        overlap = self[chromosome].search(begin, end)
+        overlap = self[chromosome].search(start, end)
 
         if strict_left:
-            overlap = (int_ for int_ in overlap if int_.begin >= begin)
+            overlap = (int_ for int_ in overlap if int_.begin >= start)
 
         if strict_right:
-            overlap = (int_ for int_ in overlap if int_.end < end)
+            overlap = (int_ for int_ in overlap if int_.end <= end)
 
         return set(overlap)
 
@@ -73,6 +73,7 @@ class GenomicIntervalTree(collections.MutableMapping):
         """
 
         # Group by chromosome.
+        tuples = sorted(tuples, key=operator.itemgetter(0))
         groups = itertools.groupby(tuples, key=operator.itemgetter(0))
 
         # Build trees.

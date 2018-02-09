@@ -1,5 +1,4 @@
-from .pandas import GenomicDataFrame, GenomicIndex
-from .tree import Interval, IntervalTree, GenomicIntervalTree
+from .core import *
 
 __author__ = 'Julian de Ruiter'
 __email__ = 'julianderuiter@gmail.com'
