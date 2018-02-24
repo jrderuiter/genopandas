@@ -7,7 +7,7 @@ test:
     - install-packages:
       packages: make
     - script:
-      name: setup env
+      name: install-conda-env
       code: |
         make env
         source activate genopandas-dev

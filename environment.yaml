@@ -23,5 +23,5 @@ dependencies:
 
     # Development requirements.
     - pytest-helpers-namespace
-    - spinx-autobuild
+    - sphinx-autobuild
     - sphinx_rtd_theme
