@@ -3,11 +3,14 @@ box: continuumio/miniconda3:latest
 test:
   steps:
     - script:
-      name: Run pytest
+      name: setup env
       code:
         - make env
         - source activate genopandas-dev
         - pip install .
+    - script:
+      name: pytest
+      code:
         - make test
 
 # build:
