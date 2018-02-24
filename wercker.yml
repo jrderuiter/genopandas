@@ -15,3 +15,17 @@ test:
     - script:
       name: pytest
       code: make test
+
+docs:
+  steps:
+    - install-packages:
+      packages: make
+    - script:
+      name: install-conda-env
+      code: |
+        make env
+        source activate genopandas-dev
+        pip install .
+    - script:
+      name: gh-pages
+      code: make gh-pages
