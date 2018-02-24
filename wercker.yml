@@ -1,6 +1,6 @@
 box: continuumio/miniconda3:latest
 
-pytest:
+test:
   steps:
     - script:
       name: Run pytest
