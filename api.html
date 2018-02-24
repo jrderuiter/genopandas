@@ -1,0 +1,824 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>API &mdash; genopandas 0.1.dev30+g62366b5.d20180224 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="genopandas 0.1.dev30+g62366b5.d20180224 documentation" href="index.html"/>
+        <link rel="next" title="Contributing" href="contributing.html"/>
+        <link rel="prev" title="Usage" href="usage.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> genopandas
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#core">core</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#frame">frame</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#matrix">matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tree">tree</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ngs">ngs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#cnv">cnv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rna">rna</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="history.html">History</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">genopandas</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>API</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/api.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="api">
+<h1>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h1>
+<p>API documentation for the various genopandas modules/classes.</p>
+<div class="section" id="core">
+<h2>core<a class="headerlink" href="#core" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="frame">
+<h3>frame<a class="headerlink" href="#frame" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="genopandas.core.frame.GenomicDataFrame">
+<em class="property">class </em><code class="descclassname">genopandas.core.frame.</code><code class="descname">GenomicDataFrame</code><span class="sig-paren">(</span><em>*args</em>, <em>chrom_lengths=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/frame.html#GenomicDataFrame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.frame.GenomicDataFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>DataFrame with fast indexing by genomic position.</p>
+<p>Requires columns ‘chromosome’, ‘start’ and ‘end’ to be present in the
+DataFrame, as these columns are used for indexing.</p>
+<p class="rubric">Examples</p>
+<p>Constructing from scratch:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span>
+<span class="gp">... </span>   <span class="p">[(</span><span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">)],</span>
+<span class="gp">... </span>   <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;chromosome&#39;</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s1">&#39;chromosome&#39;</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">GenomicDataFrame</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Reading from a GTF file:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_gtf</span><span class="p">(</span><span class="s1">&#39;/path/to/reference.gtf&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Querying by a genomic range:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">genomic_df</span><span class="o">.</span><span class="n">gloc</span><span class="p">[</span><span class="s1">&#39;2&#39;</span><span class="p">][</span><span class="mi">30</span><span class="p">:</span><span class="mi">50</span><span class="p">]</span>
+</pre></div>
+</div>
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicDataFrame.chromosome_lengths">
+<code class="descname">chromosome_lengths</code><a class="headerlink" href="#genopandas.core.frame.GenomicDataFrame.chromosome_lengths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Chromosome lengths.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicDataFrame.chromosome_offsets">
+<code class="descname">chromosome_offsets</code><a class="headerlink" href="#genopandas.core.frame.GenomicDataFrame.chromosome_offsets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Chromosome offsets (used when plotting chromosomes linearly).</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="genopandas.core.frame.GenomicDataFrame.from_csv">
+<em class="property">classmethod </em><code class="descname">from_csv</code><span class="sig-paren">(</span><em>file_path</em>, <em>index_col</em>, <em>drop_index_col=True</em>, <em>chrom_lengths=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/frame.html#GenomicDataFrame.from_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.frame.GenomicDataFrame.from_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a GenomicDataFrame from a csv file using <code class="docutils literal"><span class="pre">pandas.read_csv</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>file_path</strong> (<em>str</em>) – Path to file.</li>
+<li><strong>index_col</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – Columns to use for index. Columns should be indicated by their name.
+Should contain two entries for positioned data, three
+entries for ranged data. If not given, the first three columns of
+the DataFrame are used by default.</li>
+<li><strong>drop_index_col</strong> (<em>bool</em>) – Whether to drop the index columns in the DataFrame (True, default)
+or to drop them from the dataframe (False).</li>
+<li><strong>chrom_lengths</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em>) – Chromosome lengths.</li>
+<li><strong>**kwargs</strong> – Any extra kwargs are passed to <code class="docutils literal"><span class="pre">pandas.read_csv</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">DataFrame containing the file contents.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#genopandas.core.frame.GenomicDataFrame" title="genopandas.core.frame.GenomicDataFrame">GenomicDataFrame</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="genopandas.core.frame.GenomicDataFrame.from_df">
+<em class="property">classmethod </em><code class="descname">from_df</code><span class="sig-paren">(</span><em>df</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/frame.html#GenomicDataFrame.from_df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.frame.GenomicDataFrame.from_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs instance from dataframe containing
+ranged/positioned data.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="genopandas.core.frame.GenomicDataFrame.from_gtf">
+<em class="property">classmethod </em><code class="descname">from_gtf</code><span class="sig-paren">(</span><em>gtf_path</em>, <em>filter_=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/frame.html#GenomicDataFrame.from_gtf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.frame.GenomicDataFrame.from_gtf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a GenomicDataFrame from a GTF file.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="genopandas.core.frame.GenomicDataFrame.from_position_df">
+<em class="property">classmethod </em><code class="descname">from_position_df</code><span class="sig-paren">(</span><em>df</em>, <em>width=1</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/frame.html#GenomicDataFrame.from_position_df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.frame.GenomicDataFrame.from_position_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs instance from positioned dataframe.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="genopandas.core.frame.GenomicDataFrame.from_records">
+<em class="property">classmethod </em><code class="descname">from_records</code><span class="sig-paren">(</span><em>records</em>, <em>index_col</em>, <em>columns=None</em>, <em>drop_index_col=True</em>, <em>chrom_lengths=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/frame.html#GenomicDataFrame.from_records"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.frame.GenomicDataFrame.from_records" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a GenomicDataFrame from a structured or record ndarray.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicDataFrame.gloc">
+<code class="descname">gloc</code><a class="headerlink" href="#genopandas.core.frame.GenomicDataFrame.gloc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Genomic indexer for querying the dataframe.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.frame.GenomicDataFrame.rename_chromosomes">
+<code class="descname">rename_chromosomes</code><span class="sig-paren">(</span><em>mapping</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/frame.html#GenomicDataFrame.rename_chromosomes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.frame.GenomicDataFrame.rename_chromosomes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns copy with renamed chromosomes.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.frame.GenomicDataFrame.reset_index">
+<code class="descname">reset_index</code><span class="sig-paren">(</span><em>level=None</em>, <em>drop=False</em>, <em>col_level=0</em>, <em>col_fill=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/frame.html#GenomicDataFrame.reset_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.frame.GenomicDataFrame.reset_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mirrors pd.DataFrame.reset_index, but returns a standard DataFrame
+instead of a GenomicDataFrame, as the (genomic) index is being dropped.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="genopandas.core.frame.GenomicIndexer">
+<em class="property">class </em><code class="descclassname">genopandas.core.frame.</code><code class="descname">GenomicIndexer</code><span class="sig-paren">(</span><em>gdf</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/frame.html#GenomicIndexer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base GenomicIndexer class used to index GenomicDataFrames.</p>
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicIndexer.chromosome">
+<code class="descname">chromosome</code><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.chromosome" title="Permalink to this definition">¶</a></dt>
+<dd><p>Chromosome values.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicIndexer.chromosome_lengths">
+<code class="descname">chromosome_lengths</code><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.chromosome_lengths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Chromosome lengths.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicIndexer.chromosome_offsets">
+<code class="descname">chromosome_offsets</code><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.chromosome_offsets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Chromosome offsets.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicIndexer.chromosomes">
+<code class="descname">chromosomes</code><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.chromosomes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Available chromosomes.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicIndexer.end">
+<code class="descname">end</code><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.end" title="Permalink to this definition">¶</a></dt>
+<dd><p>End positions.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicIndexer.end_offset">
+<code class="descname">end_offset</code><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.end_offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>End positions, offset by chromosome lengths.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicIndexer.gdf">
+<code class="descname">gdf</code><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.gdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>The indexed DataFrame.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicIndexer.position">
+<code class="descname">position</code><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.position" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mid positions (between start/end).</p>
+<p>Should corrrespond with original positions for
+expanded positioned data.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicIndexer.position_offset">
+<code class="descname">position_offset</code><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.position_offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mid positions (see position), offset by chromosome lengths.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.frame.GenomicIndexer.rebuild">
+<code class="descname">rebuild</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/frame.html#GenomicIndexer.rebuild"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.rebuild" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rebuilds the genomic interval trees.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.frame.GenomicIndexer.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>chromosome</em>, <em>start</em>, <em>end</em>, <em>strict_left=False</em>, <em>strict_right=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/frame.html#GenomicIndexer.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches the DataFrame for rows within given range.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicIndexer.start">
+<code class="descname">start</code><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start positions.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicIndexer.start_offset">
+<code class="descname">start_offset</code><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.start_offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start positions, offset by chromosome lengths.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.frame.GenomicIndexer.trees">
+<code class="descname">trees</code><a class="headerlink" href="#genopandas.core.frame.GenomicIndexer.trees" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trees used for indexing the DataFrame.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="matrix">
+<h3>matrix<a class="headerlink" href="#matrix" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="genopandas.core.matrix.AnnotatedMatrix">
+<em class="property">class </em><code class="descclassname">genopandas.core.matrix.</code><code class="descname">AnnotatedMatrix</code><span class="sig-paren">(</span><em>values</em>, <em>sample_data=None</em>, <em>feature_data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>AnnotatedMatrix class.</p>
+<p>Annotated matrix classes respresent 2D numeric feature-by-sample matrices
+(with ‘features’ along the rows and samples along the columns), which can
+be annotated with optional sample_data and feature_data frames that
+describe the samples. The type of feature varies between different
+sub-classes, examples being genes (for gene expression matrices) and
+region-based bins (for copy-number data).</p>
+<p>This (base) class mainly contains a variety of methods for querying,
+subsetting and combining different annotation matrices. General plotting
+methods are also provided (<code class="docutils literal"><span class="pre">plot_heatmap</span></code>).</p>
+<p>Note that the class follows the feature-by-sample convention that is
+typically followed in biological packages, rather than the sample-by-feature
+orientation. This has the additional advantage of allowing more complex
+indices (such as a region-based MultiIndex) for the features, which are
+more difficult to use for DataFrame columns than for rows.</p>
+<dl class="attribute">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.values">
+<code class="descname">values</code><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.values" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>pd.DataFrame or AnnotatedMatrix</em> – Matrix values.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.sample_data">
+<code class="descname">sample_data</code><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.sample_data" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>pd.DataFrame</em> – DataFrame containing sample annotations, whose index corresponds
+with the columns of the matrix.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.feature_data">
+<code class="descname">feature_data</code><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.feature_data" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>pd.DataFrame</em> – DataFrame containing feature annotations, whose index corresponds
+with the rows of the matrix.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.concat">
+<em class="property">classmethod </em><code class="descname">concat</code><span class="sig-paren">(</span><em>matrices</em>, <em>axis</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.concat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.concat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concatenates matrices along given axis.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.drop_duplicate_indices">
+<code class="descname">drop_duplicate_indices</code><span class="sig-paren">(</span><em>axis='index'</em>, <em>keep='first'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.drop_duplicate_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.drop_duplicate_indices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drops duplicate indices along given axis.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.dropna_samples">
+<code class="descname">dropna_samples</code><span class="sig-paren">(</span><em>subset=None</em>, <em>how='any'</em>, <em>thresh=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.dropna_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.dropna_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drops samples with NAs in sample_data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.melt">
+<code class="descname">melt</code><span class="sig-paren">(</span><em>with_sample_data=False</em>, <em>with_feature_data=False</em>, <em>value_name='value'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.melt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.melt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Melts values into ‘tidy’ format, optionally including annotation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.pca">
+<code class="descname">pca</code><span class="sig-paren">(</span><em>n_components=None</em>, <em>axis='columns'</em>, <em>transform=False</em>, <em>with_annotation=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.pca"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.pca" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs PCA on matrix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.plot_feature">
+<code class="descname">plot_feature</code><span class="sig-paren">(</span><em>feature</em>, <em>group=None</em>, <em>kind='box'</em>, <em>ax=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.plot_feature"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.plot_feature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots distribution of expression for given feature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.plot_heatmap">
+<code class="descname">plot_heatmap</code><span class="sig-paren">(</span><em>cmap='RdBu_r'</em>, <em>sample_cols=None</em>, <em>sample_colors=None</em>, <em>feature_cols=None</em>, <em>feature_colors=None</em>, <em>metric='euclidean'</em>, <em>method='complete'</em>, <em>transpose=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.plot_heatmap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.plot_heatmap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots clustered heatmap of matrix values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.plot_pca">
+<code class="descname">plot_pca</code><span class="sig-paren">(</span><em>components=(1</em>, <em>2)</em>, <em>axis='columns'</em>, <em>ax=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.plot_pca"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.plot_pca" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots PCA of samples.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.plot_pca_variance">
+<code class="descname">plot_pca_variance</code><span class="sig-paren">(</span><em>n_components=None</em>, <em>axis='columns'</em>, <em>ax=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.plot_pca_variance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.plot_pca_variance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots variance explained by PCA components.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.query_samples">
+<code class="descname">query_samples</code><span class="sig-paren">(</span><em>expr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.query_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.query_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Subsets samples in matrix by querying sample_data with expression.</p>
+<p>Similar to the pandas <code class="docutils literal"><span class="pre">query</span></code> method, this method queries the sample
+data of the matrix with the given boolean expression. Any samples for
+which the expression evaluates to True are returned in the resulting
+AnnotatedMatrix.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>expr</strong> (<em>str</em>) – The query string to evaluate. You can refer to variables in the
+environment by prefixing them with an ‘&#64;’ character like &#64;a + b.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Subsetted matrix, containing only the samples for which <code class="docutils literal"><span class="pre">expr</span></code>
+evaluates to True.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#genopandas.core.matrix.AnnotatedMatrix" title="genopandas.core.matrix.AnnotatedMatrix">AnnotatedMatrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.rename">
+<code class="descname">rename</code><span class="sig-paren">(</span><em>index=None</em>, <em>columns=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.rename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.rename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rename samples/features in the matrix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.AnnotatedMatrix.to_csv">
+<code class="descname">to_csv</code><span class="sig-paren">(</span><em>file_path</em>, <em>sample_data_path=None</em>, <em>feature_data_path=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.to_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.to_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes matrix values to a csv file, using pandas’ to_csv method.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="genopandas.core.matrix.GenomicMatrix">
+<em class="property">class </em><code class="descclassname">genopandas.core.matrix.</code><code class="descname">GenomicMatrix</code><span class="sig-paren">(</span><em>values</em>, <em>sample_data=None</em>, <em>feature_data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#GenomicMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.GenomicMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class respresenting matrices indexed by genomic positions.</p>
+<dl class="method">
+<dt id="genopandas.core.matrix.GenomicMatrix.annotate">
+<code class="descname">annotate</code><span class="sig-paren">(</span><em>features</em>, <em>feature_id='gene_id'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#GenomicMatrix.annotate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.GenomicMatrix.annotate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annotates values for given features.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.GenomicMatrix.expand">
+<code class="descname">expand</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#GenomicMatrix.expand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.GenomicMatrix.expand" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expands matrix to include values from missing bins.</p>
+<p>Assumes rows are regularly spaced with a fixed bin size.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="genopandas.core.matrix.GenomicMatrix.from_csv">
+<em class="property">classmethod </em><code class="descname">from_csv</code><span class="sig-paren">(</span><em>file_path</em>, <em>index_col</em>, <em>sample_data=None</em>, <em>feature_data=None</em>, <em>sample_mapping=None</em>, <em>feature_mapping=None</em>, <em>drop_cols=None</em>, <em>chrom_lengths=None</em>, <em>read_data_kws=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#GenomicMatrix.from_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.GenomicMatrix.from_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads values from a csv file.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="genopandas.core.matrix.GenomicMatrix.from_csv_condensed">
+<em class="property">classmethod </em><code class="descname">from_csv_condensed</code><span class="sig-paren">(</span><em>file_path</em>, <em>index_col=0</em>, <em>sample_data=None</em>, <em>feature_data=None</em>, <em>sample_mapping=None</em>, <em>feature_mapping=None</em>, <em>drop_cols=None</em>, <em>chrom_lengths=None</em>, <em>index_regex='(?P&lt;chromosome&gt;\\w+):(?P&lt;start&gt;\\d+)-(?P&lt;end&gt;\\d+)'</em>, <em>is_one_based=False</em>, <em>is_inclusive=False</em>, <em>read_data_kws=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#GenomicMatrix.from_csv_condensed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.GenomicMatrix.from_csv_condensed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads values from a csv file with a condensed index.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="genopandas.core.matrix.GenomicMatrix.from_df">
+<em class="property">classmethod </em><code class="descname">from_df</code><span class="sig-paren">(</span><em>values</em>, <em>chrom_lengths=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#GenomicMatrix.from_df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.GenomicMatrix.from_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs a genomic matrix from the given DataFrame.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="genopandas.core.matrix.GenomicMatrix.gloc">
+<code class="descname">gloc</code><a class="headerlink" href="#genopandas.core.matrix.GenomicMatrix.gloc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Genomic-position indexer.</p>
+<p>Used to select rows from the matrix by their genomic position.
+Interface is the same as for the GenomicDataFrame gloc property
+(which this method delegates to).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.GenomicMatrix.impute">
+<code class="descname">impute</code><span class="sig-paren">(</span><em>window=11</em>, <em>min_probes=5</em>, <em>expand=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#GenomicMatrix.impute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.GenomicMatrix.impute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Imputes nan values from neighboring bins.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.GenomicMatrix.plot_heatmap">
+<code class="descname">plot_heatmap</code><span class="sig-paren">(</span><em>cmap='RdBu_r'</em>, <em>sample_cols=None</em>, <em>sample_colors=None</em>, <em>metric='euclidean'</em>, <em>method='complete'</em>, <em>transpose=True</em>, <em>cluster=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#GenomicMatrix.plot_heatmap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.GenomicMatrix.plot_heatmap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots heatmap of gene expression over samples.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.GenomicMatrix.plot_sample">
+<code class="descname">plot_sample</code><span class="sig-paren">(</span><em>sample</em>, <em>ax=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#GenomicMatrix.plot_sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.GenomicMatrix.plot_sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots values for given sample along genomic axis.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.GenomicMatrix.rename_chromosomes">
+<code class="descname">rename_chromosomes</code><span class="sig-paren">(</span><em>mapping</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#GenomicMatrix.rename_chromosomes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.GenomicMatrix.rename_chromosomes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns copy of matrix with renamed chromosomes.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.matrix.GenomicMatrix.resample">
+<code class="descname">resample</code><span class="sig-paren">(</span><em>bin_size</em>, <em>start=None</em>, <em>agg='mean'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#GenomicMatrix.resample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.GenomicMatrix.resample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resamples values at given interval by binning.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="tree">
+<h3>tree<a class="headerlink" href="#tree" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="genopandas.core.tree.GenomicIntervalTree">
+<em class="property">class </em><code class="descclassname">genopandas.core.tree.</code><code class="descname">GenomicIntervalTree</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/tree.html#GenomicIntervalTree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.tree.GenomicIntervalTree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Datastructure for efficiently accessing genomic objects by position.</p>
+<dl class="method">
+<dt id="genopandas.core.tree.GenomicIntervalTree.difference">
+<code class="descname">difference</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/tree.html#GenomicIntervalTree.difference"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.tree.GenomicIntervalTree.difference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a new tree, comprising all intervals in self but not
+in other.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="genopandas.core.tree.GenomicIntervalTree.from_tuples">
+<em class="property">classmethod </em><code class="descname">from_tuples</code><span class="sig-paren">(</span><em>tuples</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/tree.html#GenomicIntervalTree.from_tuples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.tree.GenomicIntervalTree.from_tuples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds an instance from tuples.</p>
+<p>Assumes tuples are sorted by chromosome.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.tree.GenomicIntervalTree.intersection">
+<code class="descname">intersection</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/tree.html#GenomicIntervalTree.intersection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.tree.GenomicIntervalTree.intersection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a new tree of all intervals common to both self and other.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.tree.GenomicIntervalTree.is_empty">
+<code class="descname">is_empty</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/tree.html#GenomicIntervalTree.is_empty"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.tree.GenomicIntervalTree.is_empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if tree is empty.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.tree.GenomicIntervalTree.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>chromosome</em>, <em>start</em>, <em>end=None</em>, <em>strict_left=False</em>, <em>strict_right=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/tree.html#GenomicIntervalTree.search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.tree.GenomicIntervalTree.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Searches the tree for objects within given range.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.core.tree.GenomicIntervalTree.union">
+<code class="descname">union</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/tree.html#GenomicIntervalTree.union"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.tree.GenomicIntervalTree.union" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a new tree, comprising all intervals from self and other.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="ngs">
+<h2>ngs<a class="headerlink" href="#ngs" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="cnv">
+<h3>cnv<a class="headerlink" href="#cnv" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="genopandas.ngs.cnv.CnvValueMatrix">
+<em class="property">class </em><code class="descclassname">genopandas.ngs.cnv.</code><code class="descname">CnvValueMatrix</code><span class="sig-paren">(</span><em>values</em>, <em>sample_data=None</em>, <em>feature_data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/ngs/cnv.html#CnvValueMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.ngs.cnv.CnvValueMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>CnvMatrix containing (segmented) logratio values (positions-by-samples).</p>
+<dl class="method">
+<dt id="genopandas.ngs.cnv.CnvValueMatrix.as_segments">
+<code class="descname">as_segments</code><span class="sig-paren">(</span><em>drop_columns=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/ngs/cnv.html#CnvValueMatrix.as_segments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.ngs.cnv.CnvValueMatrix.as_segments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns matrix as segments (consecutive stetches with same value).</p>
+<p>Assumes that values have already been segmented, i.e. that bins
+in the same segment have been assigned same numeric value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>drop_columns</strong> (<em>bool</em>) – Whether to drop chromosome, start, end and sample columns
+after setting the index.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">GenomicDataFrame describing genomic segments. Indexed by
+chromosome, start, end and sample.<p>Note that the sample index is included to avoid duplicate index
+errors when reindexing in cases where samples have identical
+segments.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#genopandas.core.frame.GenomicDataFrame" title="genopandas.core.frame.GenomicDataFrame">GenomicDataFrame</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.ngs.cnv.CnvValueMatrix.to_igv">
+<code class="descname">to_igv</code><span class="sig-paren">(</span><em>file_path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/ngs/cnv.html#CnvValueMatrix.to_igv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.ngs.cnv.CnvValueMatrix.to_igv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves data for viewing in IGV.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="genopandas.ngs.cnv.CnvCallMatrix">
+<em class="property">class </em><code class="descclassname">genopandas.ngs.cnv.</code><code class="descname">CnvCallMatrix</code><span class="sig-paren">(</span><em>values</em>, <em>sample_data=None</em>, <em>feature_data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/ngs/cnv.html#CnvCallMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.ngs.cnv.CnvCallMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cnv matrix containing CNV calls (genes-by-samples).</p>
+<dl class="method">
+<dt id="genopandas.ngs.cnv.CnvCallMatrix.mask_with_controls">
+<code class="descname">mask_with_controls</code><span class="sig-paren">(</span><em>column</em>, <em>mask_value=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/ngs/cnv.html#CnvCallMatrix.mask_with_controls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.ngs.cnv.CnvCallMatrix.mask_with_controls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Masks calls present in control samples.</p>
+<p>Calls are retained if (a) no call is present in the matched control
+sample, (b) if the sample call is more extreme than the control sample
+or (c) the sample and control have calls with different signs
+(loss/gain).</p>
+<p>Matched control samples should be indicated by the given column
+in the sample_data annotation.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="rna">
+<h3>rna<a class="headerlink" href="#rna" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="genopandas.ngs.rna.ExpressionMatrix">
+<em class="property">class </em><code class="descclassname">genopandas.ngs.rna.</code><code class="descname">ExpressionMatrix</code><span class="sig-paren">(</span><em>values</em>, <em>sample_data=None</em>, <em>feature_data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/ngs/rna.html#ExpressionMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.ngs.rna.ExpressionMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Matrix containing (gene) expression values (features-by-samples).</p>
+<dl class="classmethod">
+<dt id="genopandas.ngs.rna.ExpressionMatrix.from_subread">
+<em class="property">classmethod </em><code class="descname">from_subread</code><span class="sig-paren">(</span><em>file_path</em>, <em>sample_data=None</em>, <em>sample_mapping=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/ngs/rna.html#ExpressionMatrix.from_subread"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.ngs.rna.ExpressionMatrix.from_subread" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads expression from a subread output file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="genopandas.ngs.rna.ExpressionMatrix.normalize">
+<code class="descname">normalize</code><span class="sig-paren">(</span><em>size_factors=None</em>, <em>log2=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/ngs/rna.html#ExpressionMatrix.normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.ngs.rna.ExpressionMatrix.normalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalizes expression counts for sequencing depth.</p>
+<p>Normalizes by dividing sample counts using the given (sample) size
+factors. If no size factors are given, they are calculated using the
+median-of-ratios approach used by DESeq2.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>size_factors</strong> (<em>np.array</em>) – Array of size factors, length should be equal to the number
+of samples.</li>
+<li><strong>log2</strong> (<em>bool</em>) – Whether to also log2-transform the normalized counts.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">ExpressionMatrix containing normalized counts.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#genopandas.ngs.rna.ExpressionMatrix" title="genopandas.ngs.rna.ExpressionMatrix">ExpressionMatrix</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="contributing.html" class="btn btn-neutral float-right" title="Contributing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="usage.html" class="btn btn-neutral" title="Usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Julian de Ruiter.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.dev30+g62366b5.d20180224',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

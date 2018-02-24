@@ -1,0 +1,1240 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>genopandas.core.matrix &mdash; genopandas 0.1.dev30+g62366b5.d20180224 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="genopandas 0.1.dev30+g62366b5.d20180224 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> genopandas
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../history.html">History</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">genopandas</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>genopandas.core.matrix</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for genopandas.core.matrix</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">pandas.api.types</span> <span class="k">import</span> <span class="n">is_numeric_dtype</span>
+<span class="kn">import</span> <span class="nn">toolz</span>
+
+<span class="kn">from</span> <span class="nn">genopandas</span> <span class="k">import</span> <span class="n">plotting</span> <span class="k">as</span> <span class="n">gplot</span>
+<span class="kn">from</span> <span class="nn">genopandas.util.pandas_</span> <span class="k">import</span> <span class="n">DfWrapper</span>
+
+<span class="kn">from</span> <span class="nn">.frame</span> <span class="k">import</span> <span class="n">GenomicDataFrame</span><span class="p">,</span> <span class="n">GenomicSlice</span>
+
+<span class="n">RANGED_REGEX</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;(?P&lt;chromosome&gt;\w+):(?P&lt;start&gt;\d+)-(?P&lt;end&gt;\d+)&#39;</span>
+<span class="n">POSITIONED_REGEX</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;(?P&lt;chromosome&gt;\w+):(?P&lt;position&gt;\d+)&#39;</span>
+
+
+<div class="viewcode-block" id="AnnotatedMatrix"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix">[docs]</a><span class="k">class</span> <span class="nc">AnnotatedMatrix</span><span class="p">(</span><span class="n">DfWrapper</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;AnnotatedMatrix class.</span>
+
+<span class="sd">    Annotated matrix classes respresent 2D numeric feature-by-sample matrices</span>
+<span class="sd">    (with &#39;features&#39; along the rows and samples along the columns), which can</span>
+<span class="sd">    be annotated with optional sample_data and feature_data frames that</span>
+<span class="sd">    describe the samples. The type of feature varies between different</span>
+<span class="sd">    sub-classes, examples being genes (for gene expression matrices) and</span>
+<span class="sd">    region-based bins (for copy-number data).</span>
+
+<span class="sd">    This (base) class mainly contains a variety of methods for querying,</span>
+<span class="sd">    subsetting and combining different annotation matrices. General plotting</span>
+<span class="sd">    methods are also provided (``plot_heatmap``).</span>
+
+<span class="sd">    Note that the class follows the feature-by-sample convention that is</span>
+<span class="sd">    typically followed in biological packages, rather than the sample-by-feature</span>
+<span class="sd">    orientation. This has the additional advantage of allowing more complex</span>
+<span class="sd">    indices (such as a region-based MultiIndex) for the features, which are</span>
+<span class="sd">    more difficult to use for DataFrame columns than for rows.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    values : pd.DataFrame or AnnotatedMatrix</span>
+<span class="sd">        Matrix values.</span>
+<span class="sd">    sample_data : pd.DataFrame</span>
+<span class="sd">        DataFrame containing sample annotations, whose index corresponds</span>
+<span class="sd">        with the columns of the matrix.</span>
+<span class="sd">    feature_data : pd.DataFrame</span>
+<span class="sd">        DataFrame containing feature annotations, whose index corresponds</span>
+<span class="sd">        with the rows of the matrix.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">feature_data</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">AnnotatedMatrix</span><span class="p">):</span>
+            <span class="c1"># Copy values from existing matrix (only copies sample/feature</span>
+            <span class="c1"># data if these are not given explictly).</span>
+            <span class="n">sample_data</span> <span class="o">=</span> <span class="n">sample_data</span> <span class="ow">or</span> <span class="n">values</span><span class="o">.</span><span class="n">sample_data</span>
+            <span class="n">feature_data</span> <span class="o">=</span> <span class="n">feature_data</span> <span class="ow">or</span> <span class="n">values</span><span class="o">.</span><span class="n">feature_data</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Create empty annotations if none given.</span>
+            <span class="k">if</span> <span class="n">sample_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">sample_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({},</span> <span class="n">index</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">feature_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">feature_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({},</span> <span class="n">index</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+            <span class="c1"># Check {sample,feature}_data.</span>
+            <span class="c1"># assert (values.shape[1] == sample_data.shape[0]</span>
+            <span class="c1">#         and all(values.columns == sample_data.index))</span>
+
+            <span class="c1"># assert (values.shape[0] == feature_data.shape[0]</span>
+            <span class="c1">#         and all(values.index == feature_data.index))</span>
+
+            <span class="c1"># Check if all matrix columns are numeric.</span>
+            <span class="k">for</span> <span class="n">col_name</span><span class="p">,</span> <span class="n">col_values</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_numeric_dtype</span><span class="p">(</span><span class="n">col_values</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s1">&#39;Column </span><span class="si">{}</span><span class="s1"> is not numeric&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">col_name</span><span class="p">))</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span> <span class="o">=</span> <span class="n">sample_data</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span> <span class="o">=</span> <span class="n">feature_data</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_constructor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor that attempts to build new instance</span>
+<span class="sd">           from given values.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+                <span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+                <span class="n">sample_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="p">,</span>
+                <span class="n">feature_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">values</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">feature_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span>
+
+    <span class="nd">@feature_data</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">feature_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sample_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span>
+
+    <span class="nd">@sample_data</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">sample_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_csv</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
+                 <span class="n">file_path</span><span class="p">,</span>
+                 <span class="n">sample_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">feature_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">sample_mapping</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">feature_mapping</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">drop_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">read_data_kws</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="n">default_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;index_col&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="n">toolz</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">default_kwargs</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># If sample/feature_data are not dataframes, assume they are</span>
+        <span class="c1"># file paths or objects and try to read from them.</span>
+        <span class="n">read_data_kws_default</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;sep&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;sep&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="s1">&#39;index_col&#39;</span><span class="p">:</span> <span class="mi">0</span>
+        <span class="p">}</span>
+        <span class="n">read_data_kws</span> <span class="o">=</span> <span class="n">toolz</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">read_data_kws_default</span><span class="p">,</span> <span class="n">read_data_kws</span> <span class="ow">or</span> <span class="p">{})</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">sample_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample_data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)):</span>
+            <span class="n">sample_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">sample_data</span><span class="p">,</span> <span class="o">**</span><span class="n">read_data_kws</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">feature_data</span> <span class="ow">is</span> <span class="kc">None</span>
+                <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feature_data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)):</span>
+            <span class="n">feature_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">feature_data</span><span class="p">,</span> <span class="o">**</span><span class="n">read_data_kws</span><span class="p">)</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_preprocess_values</span><span class="p">(</span>
+            <span class="n">values</span><span class="p">,</span>
+            <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">,</span>
+            <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">,</span>
+            <span class="n">sample_mapping</span><span class="o">=</span><span class="n">sample_mapping</span><span class="p">,</span>
+            <span class="n">feature_mapping</span><span class="o">=</span><span class="n">feature_mapping</span><span class="p">,</span>
+            <span class="n">drop_cols</span><span class="o">=</span><span class="n">drop_cols</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">,</span> <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_preprocess_values</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
+                           <span class="n">values</span><span class="p">,</span>
+                           <span class="n">sample_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">feature_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">sample_mapping</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">feature_mapping</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">drop_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Preprocesses matrix to match given sample/feature data.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Drop extra columns (if needed).</span>
+        <span class="k">if</span> <span class="n">drop_cols</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">drop_cols</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Rename samples/features using mappings (if given).</span>
+        <span class="k">if</span> <span class="n">sample_mapping</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">feature_mapping</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+                <span class="n">columns</span><span class="o">=</span><span class="n">sample_mapping</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">feature_mapping</span><span class="p">)</span>
+
+        <span class="c1"># Reorder values to match annotations.</span>
+        <span class="n">sample_order</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">sample_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sample_data</span><span class="o">.</span><span class="n">index</span>
+        <span class="n">feat_order</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">feature_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">feature_data</span><span class="o">.</span><span class="n">index</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">sample_order</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">feat_order</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">values</span>
+
+<div class="viewcode-block" id="AnnotatedMatrix.to_csv"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix.to_csv">[docs]</a>    <span class="k">def</span> <span class="nf">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+               <span class="n">file_path</span><span class="p">,</span>
+               <span class="n">sample_data_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">feature_data_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Writes matrix values to a csv file, using pandas&#39; to_csv method.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Write matrix values.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Write sample/feature data if paths given.</span>
+        <span class="k">if</span> <span class="n">sample_data_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span>
+                <span class="n">sample_data_path</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;sep&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">feature_data_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span>
+                <span class="n">feature_data_path</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;sep&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AnnotatedMatrix.rename"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix.rename">[docs]</a>    <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Rename samples/features in the matrix.&quot;&quot;&quot;</span>
+
+        <span class="n">renamed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">feature_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">feature_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span>
+
+        <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sample_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sample_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+            <span class="n">renamed</span><span class="p">,</span> <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AnnotatedMatrix.melt"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix.melt">[docs]</a>    <span class="k">def</span> <span class="nf">melt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+             <span class="n">with_sample_data</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+             <span class="n">with_feature_data</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+             <span class="n">value_name</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Melts values into &#39;tidy&#39; format, optionally including annotation.&quot;&quot;&quot;</span>
+
+        <span class="n">feat_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="s1">&#39;feature&#39;</span>
+        <span class="n">sample_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="s1">&#39;sample&#39;</span>
+
+        <span class="n">values_long</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="n">feat_col</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(),</span>
+            <span class="n">id_vars</span><span class="o">=</span><span class="n">feat_col</span><span class="p">,</span>
+            <span class="n">var_name</span><span class="o">=</span><span class="n">sample_col</span><span class="p">,</span>
+            <span class="n">value_name</span><span class="o">=</span><span class="n">value_name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">with_sample_data</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">sample_data</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="n">sample_col</span><span class="p">)</span>
+                           <span class="o">.</span><span class="n">reset_index</span><span class="p">())</span>
+
+            <span class="n">values_long</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+                <span class="n">values_long</span><span class="p">,</span> <span class="n">sample_data</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="n">sample_col</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">with_feature_data</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">feature_data</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="n">feat_col</span><span class="p">)</span>
+                            <span class="o">.</span><span class="n">reset_index</span><span class="p">())</span>
+
+            <span class="c1"># Merge with annotation.</span>
+            <span class="n">values_long</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+                <span class="n">values_long</span><span class="p">,</span> <span class="n">feature_data</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="n">feat_col</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">values_long</span></div>
+
+<div class="viewcode-block" id="AnnotatedMatrix.query_samples"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix.query_samples">[docs]</a>    <span class="k">def</span> <span class="nf">query_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Subsets samples in matrix by querying sample_data with expression.</span>
+
+<span class="sd">        Similar to the pandas ``query`` method, this method queries the sample</span>
+<span class="sd">        data of the matrix with the given boolean expression. Any samples for</span>
+<span class="sd">        which the expression evaluates to True are returned in the resulting</span>
+<span class="sd">        AnnotatedMatrix.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        expr : str</span>
+<span class="sd">            The query string to evaluate. You can refer to variables in the</span>
+<span class="sd">            environment by prefixing them with an ‘@’ character like @a + b.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        AnnotatedMatrix</span>
+<span class="sd">            Subsetted matrix, containing only the samples for which ``expr``</span>
+<span class="sd">            evaluates to True.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">sample_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">sample_data</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+            <span class="n">values</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">,</span> <span class="n">feature_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AnnotatedMatrix.dropna_samples"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix.dropna_samples">[docs]</a>    <span class="k">def</span> <span class="nf">dropna_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;any&#39;</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Drops samples with NAs in sample_data.&quot;&quot;&quot;</span>
+
+        <span class="n">sample_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span>
+            <span class="n">subset</span><span class="o">=</span><span class="n">subset</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="n">how</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="n">thresh</span><span class="p">)</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">sample_data</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+            <span class="n">values</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">,</span> <span class="n">feature_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">AnnotatedMatrix</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">values</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sample_data</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">sample_data</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_data</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">feature_data</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AnnotatedMatrix.plot_heatmap"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix.plot_heatmap">[docs]</a>    <span class="k">def</span> <span class="nf">plot_heatmap</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;RdBu_r&#39;</span><span class="p">,</span>
+            <span class="n">sample_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">sample_colors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">feature_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">feature_colors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;euclidean&#39;</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="s1">&#39;complete&#39;</span><span class="p">,</span>
+            <span class="n">transpose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="c1"># legend_kws=None,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plots clustered heatmap of matrix values.&quot;&quot;&quot;</span>
+
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+
+        <span class="k">if</span> <span class="n">sample_cols</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sample_annot</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">gplot</span><span class="o">.</span><span class="n">color_annotation</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="p">[</span><span class="n">sample_cols</span><span class="p">],</span> <span class="n">colors</span><span class="o">=</span><span class="n">sample_colors</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sample_annot</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">feature_cols</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">feature_annot</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">gplot</span><span class="o">.</span><span class="n">color_annotation</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="p">[</span><span class="n">feature_cols</span><span class="p">],</span> <span class="n">colors</span><span class="o">=</span><span class="n">feature_colors</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">feature_annot</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+        <span class="n">clustermap_kws</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">transpose</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">clustermap_kws</span><span class="p">[</span><span class="s1">&#39;row_colors&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sample_annot</span>
+            <span class="n">clustermap_kws</span><span class="p">[</span><span class="s1">&#39;col_colors&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">feature_annot</span>
+            <span class="n">xlabel</span><span class="p">,</span> <span class="n">ylabel</span> <span class="o">=</span> <span class="s1">&#39;Features&#39;</span><span class="p">,</span> <span class="s1">&#39;Samples&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span>
+            <span class="n">clustermap_kws</span><span class="p">[</span><span class="s1">&#39;col_colors&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sample_annot</span>
+            <span class="n">clustermap_kws</span><span class="p">[</span><span class="s1">&#39;row_colors&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">feature_annot</span>
+            <span class="n">xlabel</span><span class="p">,</span> <span class="n">ylabel</span> <span class="o">=</span> <span class="s1">&#39;Samples&#39;</span><span class="p">,</span> <span class="s1">&#39;Features&#39;</span>
+
+        <span class="n">cm</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">clustermap</span><span class="p">(</span>
+            <span class="n">values</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">clustermap_kws</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">get_yticklabels</span><span class="p">(),</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">)</span>
+        <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ylabel</span><span class="p">)</span>
+
+        <span class="c1"># TODO: handle legend drawing.</span>
+        <span class="c1">#if annot_cmap is not None:</span>
+        <span class="c1">#    draw_legends(cm, annot_cmap, **(legend_kws or {}))</span>
+
+        <span class="k">return</span> <span class="n">cm</span></div>
+
+<div class="viewcode-block" id="AnnotatedMatrix.pca"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix.pca">[docs]</a>    <span class="k">def</span> <span class="nf">pca</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">n_components</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;columns&#39;</span><span class="p">,</span>
+            <span class="n">transform</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">with_annotation</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Performs PCA on matrix.&quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="k">import</span> <span class="n">PCA</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s1">&#39;Scikit-learn must be installed to &#39;</span>
+                              <span class="s1">&#39;perform PCA analyses&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Fit PCA and transform expression.</span>
+        <span class="n">pca</span> <span class="o">=</span> <span class="n">PCA</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">axis</span> <span class="ow">in</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;columns&#39;</span><span class="p">,</span> <span class="s1">&#39;samples&#39;</span><span class="p">}:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">annotation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="ow">in</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="s1">&#39;features&#39;</span><span class="p">}:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span>
+            <span class="n">annotation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown value for axis&#39;</span><span class="p">)</span>
+
+        <span class="n">pca</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">transform</span><span class="p">:</span>
+            <span class="n">transformed</span> <span class="o">=</span> <span class="n">pca</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+            <span class="n">n_components</span> <span class="o">=</span> <span class="n">transformed</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">transformed</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                <span class="n">transformed</span><span class="p">,</span>
+                <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;pca_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_components</span><span class="p">)],</span>
+                <span class="n">index</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">with_annotation</span><span class="p">:</span>
+                <span class="n">transformed</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">transformed</span><span class="p">,</span> <span class="n">annotation</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">pca</span><span class="p">,</span> <span class="n">transformed</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pca</span></div>
+
+<div class="viewcode-block" id="AnnotatedMatrix.plot_pca"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix.plot_pca">[docs]</a>    <span class="k">def</span> <span class="nf">plot_pca</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">components</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;columns&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plots PCA of samples.&quot;&quot;&quot;</span>
+
+        <span class="n">pca</span><span class="p">,</span> <span class="n">transformed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pca</span><span class="p">(</span>
+            <span class="n">n_components</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">components</span><span class="p">),</span>
+            <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span>
+            <span class="n">transform</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">with_annotation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Draw using lmplot.</span>
+        <span class="n">pca_x</span><span class="p">,</span> <span class="n">pca_y</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pca_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">components</span><span class="p">]</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">gplot</span><span class="o">.</span><span class="n">scatter_plot</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">transformed</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">pca_x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">pca_y</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">var</span> <span class="o">=</span> <span class="n">pca</span><span class="o">.</span><span class="n">explained_variance_ratio_</span><span class="p">[</span><span class="n">components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">100</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Component </span><span class="si">{}</span><span class="s1"> (</span><span class="si">{:3.1f}</span><span class="s1">%)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">components</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">var</span><span class="p">))</span>
+
+        <span class="n">var</span> <span class="o">=</span> <span class="n">pca</span><span class="o">.</span><span class="n">explained_variance_ratio_</span><span class="p">[</span><span class="n">components</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">100</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Component </span><span class="si">{}</span><span class="s1"> (</span><span class="si">{:3.1f}</span><span class="s1">%)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">components</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">var</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="AnnotatedMatrix.plot_pca_variance"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix.plot_pca_variance">[docs]</a>    <span class="k">def</span> <span class="nf">plot_pca_variance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;columns&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plots variance explained by PCA components.&quot;&quot;&quot;</span>
+
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+
+        <span class="n">pca</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pca</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">pca</span><span class="o">.</span><span class="n">n_components_</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">pca</span><span class="o">.</span><span class="n">explained_variance_ratio_</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)],</span> <span class="n">y</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Component&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Explained variance&#39;</span><span class="p">)</span>
+        <span class="n">sns</span><span class="o">.</span><span class="n">despine</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="AnnotatedMatrix.plot_feature"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix.plot_feature">[docs]</a>    <span class="k">def</span> <span class="nf">plot_feature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;box&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plots distribution of expression for given feature.&quot;&quot;&quot;</span>
+
+        <span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+
+        <span class="k">if</span> <span class="n">group</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Grouping not possible without sample data&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Determine plot type.</span>
+        <span class="n">plot_funcs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;box&#39;</span><span class="p">:</span> <span class="n">sns</span><span class="o">.</span><span class="n">boxplot</span><span class="p">,</span>
+            <span class="s1">&#39;swarm&#39;</span><span class="p">:</span> <span class="n">sns</span><span class="o">.</span><span class="n">swarmplot</span><span class="p">,</span>
+            <span class="s1">&#39;violin&#39;</span><span class="p">:</span> <span class="n">sns</span><span class="o">.</span><span class="n">violinplot</span>
+        <span class="p">}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">plot_func</span> <span class="o">=</span> <span class="n">plot_funcs</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown plot type </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kind</span><span class="p">))</span>
+
+        <span class="c1"># Assemble plot data (sample_data + expression values).</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">feature</span><span class="p">]</span><span class="o">.</span><span class="n">to_frame</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
+        <span class="n">plot_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Plot expression.</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_func</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">plot_data</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">group</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Value&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="AnnotatedMatrix.concat"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix.concat">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">concat</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">matrices</span><span class="p">,</span> <span class="n">axis</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Concatenates matrices along given axis.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Collect value/sample/feature data.</span>
+        <span class="n">tuples</span> <span class="o">=</span> <span class="p">((</span><span class="n">mat</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">mat</span><span class="o">.</span><span class="n">sample_data</span><span class="p">,</span> <span class="n">mat</span><span class="o">.</span><span class="n">feature_data</span><span class="p">)</span>
+                  <span class="k">for</span> <span class="n">mat</span> <span class="ow">in</span> <span class="n">matrices</span><span class="p">)</span>
+        <span class="n">value_list</span><span class="p">,</span> <span class="n">sample_list</span><span class="p">,</span> <span class="n">feat_list</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">tuples</span><span class="p">)</span>
+
+        <span class="c1"># Merge values.</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">value_list</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+
+        <span class="c1"># Merge sample/feature data.</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s1">&#39;index&#39;</span> <span class="ow">or</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">sample_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">sample_list</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;columns&#39;</span><span class="p">)</span>
+            <span class="n">feature_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">feat_list</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="s1">&#39;columns&#39;</span> <span class="ow">or</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">sample_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">sample_list</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">)</span>
+            <span class="n">feature_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">feat_list</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;columns&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown value for axis&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">,</span> <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AnnotatedMatrix.drop_duplicate_indices"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.AnnotatedMatrix.drop_duplicate_indices">[docs]</a>    <span class="k">def</span> <span class="nf">drop_duplicate_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="n">keep</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Drops duplicate indices along given axis.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s1">&#39;index&#39;</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">duplicated</span><span class="p">(</span><span class="n">keep</span><span class="o">=</span><span class="n">keep</span><span class="p">)</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+            <span class="n">sample_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span>
+            <span class="n">feature_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="s1">&#39;columns&#39;</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">duplicated</span><span class="p">(</span><span class="n">keep</span><span class="o">=</span><span class="n">keep</span><span class="p">)</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">]</span>
+
+            <span class="n">sample_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">feature_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown value for axis&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+            <span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">,</span> <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="GenomicMatrix"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.GenomicMatrix">[docs]</a><span class="k">class</span> <span class="nc">GenomicMatrix</span><span class="p">(</span><span class="n">AnnotatedMatrix</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class respresenting matrices indexed by genomic positions.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">feature_data</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">GenomicDataFrame</span><span class="p">):</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">GenomicDataFrame</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">values</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">,</span> <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GenomicMatrix.from_df"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.GenomicMatrix.from_df">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_df</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">chrom_lengths</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructs a genomic matrix from the given DataFrame.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">GenomicDataFrame</span><span class="p">):</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_df</span><span class="p">(</span>
+                <span class="n">values</span><span class="p">,</span> <span class="n">chrom_lengths</span><span class="o">=</span><span class="n">chrom_lengths</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GenomicMatrix.from_csv"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.GenomicMatrix.from_csv">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_csv</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
+                 <span class="n">file_path</span><span class="p">,</span>
+                 <span class="n">index_col</span><span class="p">,</span>
+                 <span class="n">sample_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">feature_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">sample_mapping</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">feature_mapping</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">drop_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">chrom_lengths</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">read_data_kws</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reads values from a csv file.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">2</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">index_col</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;index_col should contain 2 entries&#39;</span>
+                             <span class="s1">&#39; (for positioned data or 3 entries&#39;</span>
+                             <span class="s1">&#39; (for ranged data)&#39;</span><span class="p">)</span>
+
+        <span class="n">default_dtype</span> <span class="o">=</span> <span class="p">{</span><span class="n">index_col</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="nb">str</span><span class="p">}</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">toolz</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">default_dtype</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;dtype&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">index_col</span><span class="p">)</span>
+
+        <span class="c1"># If sample/feature_data are not dataframes, assume they are</span>
+        <span class="c1"># file paths or objects and try to read from them.</span>
+        <span class="n">read_data_kws_default</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;sep&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;sep&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="s1">&#39;index_col&#39;</span><span class="p">:</span> <span class="mi">0</span>
+        <span class="p">}</span>
+        <span class="n">read_data_kws</span> <span class="o">=</span> <span class="n">toolz</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">read_data_kws_default</span><span class="p">,</span> <span class="n">read_data_kws</span> <span class="ow">or</span> <span class="p">{})</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">sample_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample_data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)):</span>
+            <span class="n">sample_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">sample_data</span><span class="p">,</span> <span class="o">**</span><span class="n">read_data_kws</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">feature_data</span> <span class="ow">is</span> <span class="kc">None</span>
+                <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feature_data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)):</span>
+            <span class="n">feature_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">feature_data</span><span class="p">,</span> <span class="o">**</span><span class="n">read_data_kws</span><span class="p">)</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_preprocess_values</span><span class="p">(</span>
+            <span class="n">values</span><span class="p">,</span>
+            <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">,</span>
+            <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">,</span>
+            <span class="n">sample_mapping</span><span class="o">=</span><span class="n">sample_mapping</span><span class="p">,</span>
+            <span class="n">feature_mapping</span><span class="o">=</span><span class="n">feature_mapping</span><span class="p">,</span>
+            <span class="n">drop_cols</span><span class="o">=</span><span class="n">drop_cols</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_df</span><span class="p">(</span>
+            <span class="n">values</span><span class="p">,</span>
+            <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">,</span>
+            <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">,</span>
+            <span class="n">chrom_lengths</span><span class="o">=</span><span class="n">chrom_lengths</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GenomicMatrix.from_csv_condensed"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.GenomicMatrix.from_csv_condensed">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_csv_condensed</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
+                           <span class="n">file_path</span><span class="p">,</span>
+                           <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                           <span class="n">sample_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">feature_data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">sample_mapping</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">feature_mapping</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">drop_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">chrom_lengths</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">index_regex</span><span class="o">=</span><span class="n">RANGED_REGEX</span><span class="p">,</span>
+                           <span class="n">is_one_based</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">is_inclusive</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">read_data_kws</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reads values from a csv file with a condensed index.&quot;&quot;&quot;</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="n">index_col</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">values</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_expand_condensed_index</span><span class="p">(</span>
+            <span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+            <span class="n">index_regex</span><span class="p">,</span>
+            <span class="n">is_one_based</span><span class="o">=</span><span class="n">is_one_based</span><span class="p">,</span>
+            <span class="n">is_inclusive</span><span class="o">=</span><span class="n">is_inclusive</span><span class="p">)</span>
+
+        <span class="c1"># If sample/feature_data are not dataframes, assume they are</span>
+        <span class="c1"># file paths or objects and try to read from them.</span>
+        <span class="n">read_data_kws_default</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;sep&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;sep&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="s1">&#39;index_col&#39;</span><span class="p">:</span> <span class="mi">0</span>
+        <span class="p">}</span>
+        <span class="n">read_data_kws</span> <span class="o">=</span> <span class="n">toolz</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">read_data_kws_default</span><span class="p">,</span> <span class="n">read_data_kws</span> <span class="ow">or</span> <span class="p">{})</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">sample_data</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample_data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)):</span>
+            <span class="n">sample_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">sample_data</span><span class="p">,</span> <span class="o">**</span><span class="n">read_data_kws</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">feature_data</span> <span class="ow">is</span> <span class="kc">None</span>
+                <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">feature_data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)):</span>
+            <span class="n">feature_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">feature_data</span><span class="p">,</span> <span class="o">**</span><span class="n">read_data_kws</span><span class="p">)</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_preprocess_values</span><span class="p">(</span>
+            <span class="n">values</span><span class="p">,</span>
+            <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">,</span>
+            <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">,</span>
+            <span class="n">sample_mapping</span><span class="o">=</span><span class="n">sample_mapping</span><span class="p">,</span>
+            <span class="n">feature_mapping</span><span class="o">=</span><span class="n">feature_mapping</span><span class="p">,</span>
+            <span class="n">drop_cols</span><span class="o">=</span><span class="n">drop_cols</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_df</span><span class="p">(</span>
+            <span class="n">values</span><span class="p">,</span>
+            <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">,</span>
+            <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">,</span>
+            <span class="n">chrom_lengths</span><span class="o">=</span><span class="n">chrom_lengths</span><span class="p">)</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_expand_condensed_index</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
+                                <span class="n">index</span><span class="p">,</span>
+                                <span class="n">regex_expr</span><span class="p">,</span>
+                                <span class="n">is_one_based</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                <span class="n">is_inclusive</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Expands condensed index into a MultiIndex.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Parse entries.</span>
+        <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">regex_expr</span><span class="p">)</span>
+        <span class="n">group_dicts</span> <span class="o">=</span> <span class="p">(</span><span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">el</span><span class="p">)</span><span class="o">.</span><span class="n">groupdict</span><span class="p">()</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">index</span><span class="p">)</span>
+
+        <span class="c1"># Extract chromosome, start, end positions.</span>
+        <span class="k">if</span> <span class="n">regex</span><span class="o">.</span><span class="n">groups</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">tups</span> <span class="o">=</span> <span class="p">((</span><span class="n">grp</span><span class="p">[</span><span class="s1">&#39;chromosome&#39;</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="n">grp</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">grp</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]))</span>
+                    <span class="k">for</span> <span class="n">grp</span> <span class="ow">in</span> <span class="n">group_dicts</span><span class="p">)</span>
+            <span class="n">chrom</span><span class="p">,</span> <span class="n">starts</span><span class="p">,</span> <span class="n">ends</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">tups</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">regex</span><span class="o">.</span><span class="n">groups</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">tups</span> <span class="o">=</span> <span class="p">((</span><span class="n">grp</span><span class="p">[</span><span class="s1">&#39;chromosome&#39;</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="n">grp</span><span class="p">[</span><span class="s1">&#39;position&#39;</span><span class="p">]))</span>
+                    <span class="k">for</span> <span class="n">grp</span> <span class="ow">in</span> <span class="n">group_dicts</span><span class="p">)</span>
+            <span class="n">chrom</span><span class="p">,</span> <span class="n">starts</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">tups</span><span class="p">)</span>
+            <span class="n">ends</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Regex should have two or three groups &#39;</span>
+                             <span class="s1">&#39;(for positioned/ranged data, respectively)&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Correct for one-base and inclusive-ness to match Python conventions.</span>
+        <span class="n">starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">starts</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">is_one_based</span><span class="p">:</span>
+            <span class="n">starts</span> <span class="o">-=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">ends</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">is_inclusive</span><span class="p">:</span>
+            <span class="n">ends</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ends</span><span class="p">)</span>
+            <span class="n">ends</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Build index.</span>
+        <span class="k">if</span> <span class="n">ends</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="o">.</span><span class="n">from_arrays</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">chrom</span><span class="p">,</span> <span class="n">starts</span><span class="p">],</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;chromosome&#39;</span><span class="p">,</span> <span class="s1">&#39;position&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="o">.</span><span class="n">from_arrays</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">chrom</span><span class="p">,</span> <span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">],</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;chromosome&#39;</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">index</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">gloc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Genomic-position indexer.</span>
+
+<span class="sd">        Used to select rows from the matrix by their genomic position.</span>
+<span class="sd">        Interface is the same as for the GenomicDataFrame gloc property</span>
+<span class="sd">        (which this method delegates to).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">GLocWrapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">gloc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gloc_constructor</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_gloc_constructor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor that attempts to build new instance</span>
+<span class="sd">           from given values.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">GenomicDataFrame</span><span class="p">):</span>
+            <span class="n">sample_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+            <span class="n">feature_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+                <span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+                <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">,</span>
+                <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">values</span>
+
+<div class="viewcode-block" id="GenomicMatrix.expand"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.GenomicMatrix.expand">[docs]</a>    <span class="k">def</span> <span class="nf">expand</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Expands matrix to include values from missing bins.</span>
+
+<span class="sd">        Assumes rows are regularly spaced with a fixed bin size.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">expanded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">)</span>
+        <span class="n">feature_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">expanded</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+            <span class="n">expanded</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="p">,</span> <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_expand</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">_bin_indices</span><span class="p">(</span><span class="n">grp</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">):</span>
+            <span class="n">chrom</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">start</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+            <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">bin_size</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">cycle</span><span class="p">([</span><span class="n">chrom</span><span class="p">]),</span> <span class="n">bins</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+        <span class="n">bin_size</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># TODO: Warn if bin_size is 1? (Probably positioned data).</span>
+
+        <span class="c1"># Check inferred bin size.</span>
+        <span class="n">starts</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ends</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">diffs</span> <span class="o">=</span> <span class="n">ends</span> <span class="o">-</span> <span class="n">starts</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">diffs</span> <span class="o">==</span> <span class="n">bin_size</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Bins do not match inferred bin size&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Check if following bins match inferred bin size.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">starts</span><span class="p">),</span> <span class="n">bin_size</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Following bins do not match inferred bin size&#39;</span><span class="p">)</span>
+
+        <span class="n">indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span>
+                <span class="n">_bin_indices</span><span class="p">(</span><span class="n">grp</span><span class="p">,</span> <span class="n">bin_size</span><span class="o">=</span><span class="n">bin_size</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">grp</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">values</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">indices</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GenomicMatrix.impute"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.GenomicMatrix.impute">[docs]</a>    <span class="k">def</span> <span class="nf">impute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">min_probes</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">expand</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Imputes nan values from neighboring bins.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">expand</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span>
+
+        <span class="c1"># Calculate median value within window (allowing for</span>
+        <span class="c1"># window - min_probes number of NAs within the window).</span>
+        <span class="n">rolling</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span>
+            <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="n">min_probes</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">avg_values</span> <span class="o">=</span> <span class="n">rolling</span><span class="o">.</span><span class="n">median</span><span class="p">()</span>
+
+        <span class="c1"># Copy over values for null rows for the imputation.</span>
+        <span class="n">imputed</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">imputed</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">imputed</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">avg_values</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+        <span class="c1"># Match feature data to new values.</span>
+        <span class="n">feature_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feature_data</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">imputed</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+            <span class="n">imputed</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="p">,</span> <span class="n">feature_data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GenomicMatrix.resample"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.GenomicMatrix.resample">[docs]</a>    <span class="k">def</span> <span class="nf">resample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Resamples values at given interval by binning.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Perform resampling per chromosome.</span>
+        <span class="n">resampled</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_resample_chromosome</span><span class="p">(</span>
+                <span class="n">grp</span><span class="p">,</span> <span class="n">bin_size</span><span class="o">=</span><span class="n">bin_size</span><span class="p">,</span> <span class="n">agg</span><span class="o">=</span><span class="n">agg</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">)</span>
+             <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">grp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)),</span>
+            <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># yapf: disable</span>
+
+        <span class="c1"># Restore original index order.</span>
+        <span class="n">resampled</span> <span class="o">=</span> <span class="n">resampled</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">gloc</span><span class="o">.</span><span class="n">chromosomes</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+            <span class="n">GenomicDataFrame</span><span class="p">(</span>
+                <span class="n">resampled</span><span class="p">,</span> <span class="n">chrom_lengths</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">chromosome_lengths</span><span class="p">),</span>
+            <span class="n">sample_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_resample_chromosome</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">agg</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">):</span>
+        <span class="c1"># Bin rows by their centre positions.</span>
+        <span class="n">starts</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ends</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">positions</span> <span class="o">=</span> <span class="p">(</span><span class="n">starts</span> <span class="o">+</span> <span class="n">ends</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+
+        <span class="n">range_start</span> <span class="o">=</span> <span class="n">starts</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">start</span>
+        <span class="n">range_end</span> <span class="o">=</span> <span class="n">ends</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">+</span> <span class="n">bin_size</span>
+
+        <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">range_start</span><span class="p">,</span> <span class="n">range_end</span><span class="p">,</span> <span class="n">bin_size</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">bins</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No bins in range (</span><span class="si">{}</span><span class="s1">, </span><span class="si">{}</span><span class="s1">) with bin_size </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span>
+                             <span class="nb">format</span><span class="p">(</span><span class="n">range_start</span><span class="p">,</span> <span class="n">ends</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">bin_size</span><span class="p">))</span>
+
+        <span class="n">binned</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">)</span>
+
+        <span class="c1"># Resample.</span>
+        <span class="n">resampled</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">binned</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">agg</span><span class="p">)</span>
+        <span class="n">resampled</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="o">.</span><span class="n">from_arrays</span><span class="p">(</span>
+            <span class="p">[[</span><span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bins</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="n">bins</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:]],</span>
+            <span class="n">names</span><span class="o">=</span><span class="n">values</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">resampled</span>
+
+<div class="viewcode-block" id="GenomicMatrix.rename_chromosomes"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.GenomicMatrix.rename_chromosomes">[docs]</a>    <span class="k">def</span> <span class="nf">rename_chromosomes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns copy of matrix with renamed chromosomes.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+            <span class="n">values</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">rename_chromosomes</span><span class="p">(</span><span class="n">mapping</span><span class="p">),</span>
+            <span class="n">sample_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sample_data</span><span class="p">,</span>
+            <span class="n">feature_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GenomicMatrix.annotate"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.GenomicMatrix.annotate">[docs]</a>    <span class="k">def</span> <span class="nf">annotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">feature_id</span><span class="o">=</span><span class="s1">&#39;gene_id&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Annotates values for given features.&quot;&quot;&quot;</span>
+
+        <span class="c1"># Calculate calls.</span>
+        <span class="n">get_id</span> <span class="o">=</span> <span class="n">operator</span><span class="o">.</span><span class="n">attrgetter</span><span class="p">(</span><span class="n">feature_id</span><span class="p">)</span>
+
+        <span class="n">annotated_calls</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">itertuples</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">chrom</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">Index</span>
+                <span class="n">overlap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">gloc</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">chrom</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+
+                <span class="n">annotated_calls</span><span class="p">[</span><span class="n">get_id</span><span class="p">(</span><span class="n">feature</span><span class="p">)]</span> <span class="o">=</span> <span class="n">overlap</span><span class="o">.</span><span class="n">median</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+        <span class="c1"># Assemble into dataframe.</span>
+        <span class="n">annotated</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span><span class="n">annotated_calls</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">annotated</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">feature_id</span>
+
+        <span class="k">return</span> <span class="n">AnnotatedMatrix</span><span class="p">(</span><span class="n">annotated</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sample_data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GenomicMatrix.plot_sample"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.GenomicMatrix.plot_sample">[docs]</a>    <span class="k">def</span> <span class="nf">plot_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plots values for given sample along genomic axis.&quot;&quot;&quot;</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">gplot</span><span class="o">.</span><span class="n">genomic_scatter_plot</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">sample</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="GenomicMatrix.plot_heatmap"><a class="viewcode-back" href="../../../api.html#genopandas.core.matrix.GenomicMatrix.plot_heatmap">[docs]</a>    <span class="k">def</span> <span class="nf">plot_heatmap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                     <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;RdBu_r&#39;</span><span class="p">,</span>
+                     <span class="n">sample_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">sample_colors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                     <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;euclidean&#39;</span><span class="p">,</span>
+                     <span class="n">method</span><span class="o">=</span><span class="s1">&#39;complete&#39;</span><span class="p">,</span>
+                     <span class="n">transpose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                     <span class="n">cluster</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                     <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plots heatmap of gene expression over samples.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="s1">&#39;row_cluster&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">or</span> <span class="s1">&#39;col_cluster&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;GenomicMatrices only supports clustering by samples. &#39;</span>
+                <span class="s1">&#39;Use the </span><span class="se">\&#39;</span><span class="s1">cluster</span><span class="se">\&#39;</span><span class="s1"> argument to specify whether &#39;</span>
+                <span class="s1">&#39;clustering should be performed.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">cluster</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">scipy.spatial.distance</span> <span class="k">import</span> <span class="n">pdist</span>
+            <span class="kn">from</span> <span class="nn">scipy.cluster.hierarchy</span> <span class="k">import</span> <span class="n">linkage</span>
+
+            <span class="c1"># Do clustering on matrix with only finite values.</span>
+            <span class="n">values_clust</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">replace</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">values_clust</span> <span class="o">=</span> <span class="n">values_clust</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+
+            <span class="n">dist</span> <span class="o">=</span> <span class="n">pdist</span><span class="p">(</span><span class="n">values_clust</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+            <span class="n">sample_linkage</span> <span class="o">=</span> <span class="n">linkage</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sample_linkage</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Draw heatmap.</span>
+        <span class="n">heatmap_kws</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">transpose</span><span class="p">:</span>
+            <span class="n">heatmap_kws</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+                <span class="s1">&#39;row_cluster&#39;</span><span class="p">:</span> <span class="n">sample_linkage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s1">&#39;row_linkage&#39;</span><span class="p">:</span> <span class="n">sample_linkage</span><span class="p">,</span>
+                <span class="s1">&#39;col_cluster&#39;</span><span class="p">:</span> <span class="kc">False</span>
+            <span class="p">})</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">heatmap_kws</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+                <span class="s1">&#39;col_cluster&#39;</span><span class="p">:</span> <span class="n">sample_linkage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s1">&#39;col_linkage&#39;</span><span class="p">:</span> <span class="n">sample_linkage</span><span class="p">,</span>
+                <span class="s1">&#39;row_cluster&#39;</span><span class="p">:</span> <span class="kc">False</span>
+            <span class="p">})</span>
+
+        <span class="n">cm</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">plot_heatmap</span><span class="p">(</span>
+            <span class="n">sample_cols</span><span class="o">=</span><span class="n">sample_cols</span><span class="p">,</span>
+            <span class="n">sample_colors</span><span class="o">=</span><span class="n">sample_colors</span><span class="p">,</span>
+            <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+            <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+            <span class="n">transpose</span><span class="o">=</span><span class="n">transpose</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">heatmap_kws</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_style_heatmap</span><span class="p">(</span><span class="n">cm</span><span class="p">,</span> <span class="n">transpose</span><span class="o">=</span><span class="n">transpose</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cm</span></div>
+
+    <span class="k">def</span> <span class="nf">_style_heatmap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cm</span><span class="p">,</span> <span class="n">transpose</span><span class="p">):</span>
+        <span class="n">chrom_breaks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">()</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
+
+        <span class="n">chrom_labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="o">.</span><span class="n">gloc</span><span class="o">.</span><span class="n">chromosomes</span>
+        <span class="n">chrom_label_pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="mi">0</span><span class="p">],</span> <span class="n">chrom_breaks</span><span class="p">])</span>
+        <span class="n">chrom_label_pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">chrom_label_pos</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">chrom_label_pos</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="k">if</span> <span class="n">transpose</span><span class="p">:</span>
+            <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+
+            <span class="k">for</span> <span class="n">loc</span> <span class="ow">in</span> <span class="n">chrom_breaks</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">chrom_label_pos</span><span class="p">)</span>
+            <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">chrom_labels</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+            <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Genomic position&#39;</span><span class="p">)</span>
+            <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Samples&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+
+            <span class="k">for</span> <span class="n">loc</span> <span class="ow">in</span> <span class="n">chrom_breaks</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">chrom_label_pos</span><span class="p">)</span>
+            <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">(</span><span class="n">chrom_labels</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+            <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Samples&#39;</span><span class="p">)</span>
+            <span class="n">cm</span><span class="o">.</span><span class="n">ax_heatmap</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Genomic position&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cm</span></div>
+
+
+<span class="k">class</span> <span class="nc">GLocWrapper</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper class that wraps gloc indexer from given object.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gloc</span><span class="p">,</span> <span class="n">constructor</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gloc</span> <span class="o">=</span> <span class="n">gloc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_constructor</span> <span class="o">=</span> <span class="n">constructor</span>
+
+    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_gloc</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">attr</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_function</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">attr</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gloc</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">GenomicSlice</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">GLocSliceWrapper</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_gloc</span><span class="p">,</span> <span class="n">chromosome</span><span class="o">=</span><span class="n">item</span><span class="p">,</span> <span class="n">constructor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_constructor</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">_wrap_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Wrapper that calls _constructor on returned result.&quot;&quot;&quot;</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">wrapper</span>
+
+
+<span class="k">class</span> <span class="nc">GLocSliceWrapper</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper class that wraps slice from gloc indexer on given object.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gloc</span><span class="p">,</span> <span class="n">chromosome</span><span class="p">,</span> <span class="n">constructor</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gloc</span> <span class="o">=</span> <span class="n">gloc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_chromosome</span> <span class="o">=</span> <span class="n">chromosome</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_constructor</span> <span class="o">=</span> <span class="n">constructor</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gloc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_chromosome</span><span class="p">][</span><span class="n">item</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Julian de Ruiter.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.1.dev30+g62366b5.d20180224',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
