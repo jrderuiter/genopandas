@@ -1,0 +1,27 @@
+box: continuumio/miniconda3:latest
+
+pytest:
+  steps:
+    - script:
+      name: Run pytest
+      code:
+        - make env
+        - source activate genopandas-dev
+        - pip install .
+        - make test
+
+# build:
+#   # override busybox
+#   box: google/golang
+#   steps:
+#     - script:
+#         name: testing build
+#         code: go version
+
+# deploy:
+#   # override busybox
+#   box: nodesource/node:trusty
+#   steps:
+#     - script:
+#         name: testing deploy
+#         code: node --version

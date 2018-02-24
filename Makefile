@@ -4,5 +4,8 @@ docs-autobuild:
 	mkdir -p docs/_build
 	sphinx-autobuild docs docs/_build
 
+env:
+	conda env create --file environment.yaml
+
 test:
 	pytest tests
