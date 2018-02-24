@@ -4,9 +4,8 @@ box:
 
 test:
   steps:
-    - script:
-      name: apt-get
-      code: apt-get update && apt-get install -y make
+    - install-packages:
+      packages: make
     - script:
       name: setup env
       code: |

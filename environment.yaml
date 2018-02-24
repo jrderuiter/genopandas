@@ -1,4 +1,8 @@
 name: genopandas-dev
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
 dependencies:
   # Package requirements.
   - python =3.6
