@@ -29,3 +29,27 @@ docs:
     - script:
       name: gh-pages
       code: make gh-pages
+
+pypi:
+  steps:
+    - install-packages:
+      packages: make
+    - script:
+      name: install-conda-env
+      code: |
+        make env
+        source activate genopandas-dev
+        pip install .
+    - script:
+      name: build-wheel
+      code: |
+        rm -rf build
+        python setup.py sdist bdist_wheel
+    - script:
+      name: upload-to-pypi
+      code: |
+        echo "[pypi]" > ~/.pypirc
+        echo "repository = https://test.pypi.org/legacy/" >> ~/.pypirc
+        echo "username:" $PYPI_USER >> ~/.pypirc
+        echo "password:" $PYPI_PASSWORD >> ~/.pypirc
+        twine upload -r pypi --sign dist/*
