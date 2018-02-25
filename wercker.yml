@@ -4,10 +4,6 @@ box:
 
 test:
   steps:
-    - script:
-      name: populate-conda-cache
-      code: |-
-        if test -d "$WERCKER_CACHE_DIR/conda-pkgs"; then rsync -az "$WERCKER_CACHE_DIR/conda-pkgs" /opt/conda/pkgs; fi
     - install-packages:
       packages: make
     - script:
@@ -19,12 +15,6 @@ test:
     - script:
       name: pytest
       code: make test
-    - script:
-      name: store-conda-cache
-      code: |
-        du -h -d0 /opt/conda/pkgs
-        rsync -az --include="*/" --include "*.tar.bz2" --exclude "*" --max-size=10m /opt/conda/pkgs/* "$WERCKER_CACHE_DIR/conda-pkgs/"
-        du -h -d0 "$WERCKER_CACHE_DIR/conda-pkgs"
 
 docs:
   steps:
