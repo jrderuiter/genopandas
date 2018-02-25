@@ -37,7 +37,7 @@ pypi:
     - script:
       name: setup-conda-env
       code: |
-        conda create -n pypi python=3.6 setuptools wheel twine
+        conda create -c conda-forge -n pypi python=3.6 setuptools wheel twine
         source activate pypi
     - script:
       name: build-wheel
