@@ -7,7 +7,7 @@ test:
     - install-packages:
       packages: make
     - script:
-      name: install-conda-env
+      name: setup-conda-env
       code: |
         make env
         source activate genopandas-dev
@@ -21,7 +21,7 @@ docs:
     - install-packages:
       packages: make
     - script:
-      name: install-conda-env
+      name: setup-conda-env
       code: |
         make env
         source activate genopandas-dev
@@ -35,11 +35,10 @@ pypi:
     - install-packages:
       packages: make
     - script:
-      name: install-conda-env
+      name: setup-conda-env
       code: |
-        make env
-        source activate genopandas-dev
-        pip install .
+        conda create -n pypi python=3.6 setuptools wheel twine
+        source activate pypi
     - script:
       name: build-wheel
       code: |
