@@ -27,6 +27,9 @@ docs:
         source activate genopandas-dev
         pip install .
     - script:
+      name: change-remote
+      code: git remote set-url origin https://{$GH_TOKEN}:x-oauth-basic@github.com/jrderuiter/genopandas.git
+    - script:
       name: gh-pages
       code: make gh-pages
 
@@ -48,7 +51,7 @@ pypi:
       name: upload-to-pypi
       code: |
         echo "[pypi]" > ~/.pypirc
-        echo "repository = https://test.pypi.org/legacy/" >> ~/.pypirc
         echo "username:" $PYPI_USER >> ~/.pypirc
         echo "password:" $PYPI_PASSWORD >> ~/.pypirc
         twine upload -r pypi dist/*
+        rm -f  ~/.pypirc
