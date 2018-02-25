@@ -1,5 +1,5 @@
 
-BRANCH := $(shell git symbolic-ref -q --short HEAD)
+BRANCH = $(shell git symbolic-ref --short HEAD)
 
 docs-autobuild:
 	rm -rf docs/_build
