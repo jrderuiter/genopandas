@@ -22,9 +22,9 @@ test:
     - script:
       name: store-conda-cache
       code: |
-        du -h /opt/conda/pkgs
-        rsync -az --include="*/" --include "*.tar.bz2" --exclude "*" /opt/conda/pkgs/* "$WERCKER_CACHE_DIR/conda-pkgs/"
-        ls -alih "$WERCKER_CACHE_DIR/conda-pkgs"
+        du -h -d0 /opt/conda/pkgs
+        rsync -az --include="*/" --include "*.tar.bz2" --exclude "*" --max-size=10m /opt/conda/pkgs/* "$WERCKER_CACHE_DIR/conda-pkgs/"
+        du -h -d0 "$WERCKER_CACHE_DIR/conda-pkgs"
 
 docs:
   steps:
