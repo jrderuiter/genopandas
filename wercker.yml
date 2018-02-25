@@ -7,7 +7,7 @@ test:
     - script:
       name: populate-conda-cache
       code: |-
-        if test -d "$WERCKER_CACHE_DIR/conda-pkgs"; then rsync -avz "$WERCKER_CACHE_DIR/conda-pkgs/*" /opt/conda/pkgs/; fi
+        if test -d "$WERCKER_CACHE_DIR/conda-pkgs"; then rsync -az "$WERCKER_CACHE_DIR/conda-pkgs/*" /opt/conda/pkgs/; fi
     - install-packages:
       packages: make
     - script:
@@ -22,7 +22,7 @@ test:
     - script:
       name: store-conda-cache
       code: |
-        rsync -avz /opt/conda/pkgs/* "$WERCKER_CACHE_DIR/conda-pkgs/"
+        rsync -az --include="*/" --include "*.tar.bz2" --exclude "*" /opt/conda/pkgs/* "$WERCKER_CACHE_DIR/conda-pkgs/"
         ls -alih "$WERCKER_CACHE_DIR/conda-pkgs"
 
 docs:
