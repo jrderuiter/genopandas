@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>genopandas.core.tree &mdash; genopandas 0.1.dev30+g62366b5.d20180224 documentation</title>
+  <title>genopandas.core.tree &mdash; genopandas 0.1.dev30+gfe5cd7b documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="genopandas 0.1.dev30+g62366b5.d20180224 documentation" href="../../../index.html"/>
+    <link rel="top" title="genopandas 0.1.dev30+gfe5cd7b documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -215,8 +215,8 @@
 
         <span class="k">if</span> <span class="n">strict_right</span><span class="p">:</span>
             <span class="n">overlap</span> <span class="o">=</span> <span class="p">(</span><span class="n">int_</span> <span class="k">for</span> <span class="n">int_</span> <span class="ow">in</span> <span class="n">overlap</span> <span class="k">if</span> <span class="n">int_</span><span class="o">.</span><span class="n">end</span> <span class="o">&lt;=</span> <span class="n">end</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">overlap</span><span class="p">)</span></div>
+</div>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">overlap</span><span class="p">)</span>
 
     <span class="c1"># pylint: enable=too-many-arguments</span>
 
@@ -225,8 +225,8 @@
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
-
-        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">isempty</span><span class="p">()</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trees</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+</div>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">tree</span><span class="o">.</span><span class="n">isempty</span><span class="p">()</span> <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trees</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
 
 <div class="viewcode-block" id="GenomicIntervalTree.from_tuples"><a class="viewcode-back" href="../../../api.html#genopandas.core.tree.GenomicIntervalTree.from_tuples">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_tuples</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">tuples</span><span class="p">):</span>
@@ -243,16 +243,16 @@
         <span class="n">trees</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">chrom</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
             <span class="n">trees</span><span class="p">[</span><span class="n">chrom</span><span class="p">]</span> <span class="o">=</span> <span class="n">IntervalTree</span><span class="o">.</span><span class="n">from_tuples</span><span class="p">(</span><span class="n">tup</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">group</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">trees</span><span class="p">)</span></div>
+</div>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">trees</span><span class="p">)</span>
 
 <div class="viewcode-block" id="GenomicIntervalTree.intersection"><a class="viewcode-back" href="../../../api.html#genopandas.core.tree.GenomicIntervalTree.intersection">[docs]</a>    <span class="k">def</span> <span class="nf">intersection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a new tree of all intervals common to both self and other.&quot;&quot;&quot;</span>
 
         <span class="n">shared</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
-            <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">other</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
-             <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">shared</span><span class="p">})</span></div>
+            <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">other</span><span class="p">[</span><span class="n">k</span><span class="p">])</span></div>
+             <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">shared</span><span class="p">})</span>
 
 <div class="viewcode-block" id="GenomicIntervalTree.union"><a class="viewcode-back" href="../../../api.html#genopandas.core.tree.GenomicIntervalTree.union">[docs]</a>    <span class="k">def</span> <span class="nf">union</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a new tree, comprising all intervals from self and other.&quot;&quot;&quot;</span>
@@ -264,8 +264,8 @@
                 <span class="n">merged</span><span class="p">[</span><span class="n">chrom</span><span class="p">]</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="n">chrom</span><span class="p">]</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">merged</span><span class="p">[</span><span class="n">chrom</span><span class="p">]</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">merged</span><span class="p">)</span></div>
+</div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">merged</span><span class="p">)</span>
 
 <div class="viewcode-block" id="GenomicIntervalTree.difference"><a class="viewcode-back" href="../../../api.html#genopandas.core.tree.GenomicIntervalTree.difference">[docs]</a>    <span class="k">def</span> <span class="nf">difference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a new tree, comprising all intervals in self but not</span>
@@ -278,8 +278,8 @@
                 <span class="n">diff</span><span class="p">[</span><span class="n">chrom</span><span class="p">]</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">other</span><span class="p">[</span><span class="n">chrom</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">diff</span><span class="p">[</span><span class="n">chrom</span><span class="p">]</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span></div>
+</div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__or__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
@@ -287,8 +287,8 @@
     <span class="k">def</span> <span class="nf">__and__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">other</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
 </pre></div>
 
            </div>
@@ -325,7 +325,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.dev30+g62366b5.d20180224',
+            VERSION:'0.1.dev30+gfe5cd7b',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

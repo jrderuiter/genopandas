@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>genopandas.ngs.rna &mdash; genopandas 0.1.dev30+g62366b5.d20180224 documentation</title>
+  <title>genopandas.ngs.rna &mdash; genopandas 0.1.dev30+gfe5cd7b documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="genopandas 0.1.dev30+g62366b5.d20180224 documentation" href="../../../index.html"/>
+    <link rel="top" title="genopandas 0.1.dev30+gfe5cd7b documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -183,8 +183,8 @@
             <span class="n">sample_mapping</span><span class="o">=</span><span class="n">sample_mapping</span><span class="p">,</span>
             <span class="n">drop_cols</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Chr&#39;</span><span class="p">,</span> <span class="s1">&#39;Start&#39;</span><span class="p">,</span> <span class="s1">&#39;End&#39;</span><span class="p">,</span> <span class="s1">&#39;Strand&#39;</span><span class="p">,</span> <span class="s1">&#39;Length&#39;</span><span class="p">],</span>
             <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-            <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+            <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span></div>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ExpressionMatrix.normalize"><a class="viewcode-back" href="../../../api.html#genopandas.ngs.rna.ExpressionMatrix.normalize">[docs]</a>    <span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size_factors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log2</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Normalizes expression counts for sequencing depth.</span>
@@ -215,8 +215,8 @@
 
         <span class="k">if</span> <span class="n">log2</span><span class="p">:</span>
             <span class="n">normalized</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">normalized</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span></div>
+</div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_estimate_size_factors</span><span class="p">(</span><span class="n">counts</span><span class="p">):</span>
@@ -235,8 +235,8 @@
                 <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                 <span class="n">arr</span><span class="o">=</span><span class="n">counts</span><span class="p">,</span>
                 <span class="n">log_geo_means</span><span class="o">=</span><span class="n">log_geo_means</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">size_factors</span></div>
+</div>
+        <span class="k">return</span> <span class="n">size_factors</span>
 </pre></div>
 
            </div>
@@ -273,7 +273,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.dev30+g62366b5.d20180224',
+            VERSION:'0.1.dev30+gfe5cd7b',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

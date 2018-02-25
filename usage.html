@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Usage &mdash; genopandas 0.1.dev30+g62366b5.d20180224 documentation</title>
+  <title>Usage &mdash; genopandas 0.1.dev30+gfe5cd7b documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="genopandas 0.1.dev30+g62366b5.d20180224 documentation" href="index.html"/>
+    <link rel="top" title="genopandas 0.1.dev30+gfe5cd7b documentation" href="index.html"/>
         <link rel="next" title="API" href="api.html"/>
         <link rel="prev" title="Installation" href="installation.html"/> 
 
@@ -192,7 +192,7 @@
   <div class="section" id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
 <p>GenoPandas provides two main data structures for storing genomics data, the
-<code class="docutils literal"><span class="pre">GenomicDataFrame</span></code> class and an <code class="docutils literal"><span class="pre">AnnotatedMatrix</span></code> class. GenomicDataFrames
+<code class="docutils literal notranslate"><span class="pre">GenomicDataFrame</span></code> class and an <code class="docutils literal notranslate"><span class="pre">AnnotatedMatrix</span></code> class. GenomicDataFrames
 can be used to store any type of location-based genomic data and provides
 efficient querying a genomic intervaltree structure. AnnotatedMatrices are used
 to store various types of numeric data in feature-by-sample matrices, together
@@ -202,7 +202,7 @@ AnnotatedMatrix provide further specializations for specific data types
 manipulations and visualizations of these data.</p>
 <div class="section" id="genomicdataframes">
 <h2>GenomicDataFrames<a class="headerlink" href="#genomicdataframes" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal"><span class="pre">GenomicDataFrame</span></code> class is a subclass of the pandas DataFrame class and
+<p>The <code class="docutils literal notranslate"><span class="pre">GenomicDataFrame</span></code> class is a subclass of the pandas DataFrame class and
 therefore supports the same basic interface as a normal pandas DataFrame.
 However, in contrast to pandas DataFrames, GenomicDataFrames are required to
 have a MultiIndex containing three levels describing the genomic range of
@@ -211,7 +211,7 @@ are zero-based and the start position is inclusive, whilst the end position is
 exclusive. This means that positioned data (which does not span a range, but
 is located at an exact genomic position) can be described as (chromosome,
 start_position, start_position + 1). GenomicDataFrames use this MultiLevel
-index to provide efficient querying of genomic ranges using a <code class="docutils literal"><span class="pre">gloc</span></code> indexer,
+index to provide efficient querying of genomic ranges using a <code class="docutils literal notranslate"><span class="pre">gloc</span></code> indexer,
 which is backed by an intervaltree data structure.</p>
 <div class="section" id="construction">
 <h3>Construction<a class="headerlink" href="#construction" title="Permalink to this headline">¶</a></h3>
@@ -219,7 +219,7 @@ which is backed by an intervaltree data structure.</p>
 <h4>From existing DataFrames<a class="headerlink" href="#from-existing-dataframes" title="Permalink to this headline">¶</a></h4>
 <p>A GenomicDataFrame can easily be constructed from an existing DataFrame as
 follows:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">genopandas</span> <span class="kn">import</span> <span class="n">GenomicDataFrame</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">genopandas</span> <span class="kn">import</span> <span class="n">GenomicDataFrame</span>
 
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span>
     <span class="p">[(</span><span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">),</span>
@@ -236,18 +236,18 @@ follows:</p>
 The constructor does currently not check of the presence of the index, but
 any querying will result in errors if a proper index is missing.</p>
 <p>If you want to check for the presence of a suitable index, you can use the
-<code class="docutils literal"><span class="pre">from_df</span></code> classmethod, which explicitly checks the index of the given
+<code class="docutils literal notranslate"><span class="pre">from_df</span></code> classmethod, which explicitly checks the index of the given
 dataframe:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_df</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_df</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>If a positioned dataframe (with two index levels, chromosome and
-position) is given to <code class="docutils literal"><span class="pre">from_df</span></code>, this index is automatically expanded to
+position) is given to <code class="docutils literal notranslate"><span class="pre">from_df</span></code>, this index is automatically expanded to
 three levels containing start/end positions. Alternatively,
-<code class="docutils literal"><span class="pre">from_position_df</span></code> can be used to explicitly expand positioned data,
+<code class="docutils literal notranslate"><span class="pre">from_position_df</span></code> can be used to explicitly expand positioned data,
 which allows the width of the expanded items to be specified using the
-<code class="docutils literal"><span class="pre">width</span></code> parameter:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span>
+<code class="docutils literal notranslate"><span class="pre">width</span></code> parameter:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span>
     <span class="p">[(</span><span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">),</span>
      <span class="p">(</span><span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">),</span>
      <span class="p">(</span><span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">)],</span>
@@ -261,11 +261,11 @@ which allows the width of the expanded items to be specified using the
 </div>
 <div class="section" id="from-delimited-files">
 <h4>From (delimited) files<a class="headerlink" href="#from-delimited-files" title="Permalink to this headline">¶</a></h4>
-<p>GenomicDataFrames can also be read from delimited files using the <code class="docutils literal"><span class="pre">from_csv</span></code>
-method. This method mimics the <code class="docutils literal"><span class="pre">pd.read_csv</span></code> method, but requires the
-<code class="docutils literal"><span class="pre">index_col</span></code> argument to indicate which three columns to use for constructing
+<p>GenomicDataFrames can also be read from delimited files using the <code class="docutils literal notranslate"><span class="pre">from_csv</span></code>
+method. This method mimics the <code class="docutils literal notranslate"><span class="pre">pd.read_csv</span></code> method, but requires the
+<code class="docutils literal notranslate"><span class="pre">index_col</span></code> argument to indicate which three columns to use for constructing
 the index. Using this approach, a GTF file (for example) can be read as follows:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gdf</span> <span class="o">=</span> <span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_csv</span><span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">gdf</span> <span class="o">=</span> <span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_csv</span><span class="p">(</span>
     <span class="s1">&#39;../data/example.gtf&#39;</span><span class="p">,</span>
     <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span>
     <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;contig&#39;</span><span class="p">,</span> <span class="s1">&#39;source&#39;</span><span class="p">,</span> <span class="s1">&#39;feature&#39;</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;score&#39;</span><span class="p">,</span>
@@ -277,82 +277,82 @@ the index. Using this approach, a GTF file (for example) can be read as follows:
 </div>
 <p>For several common file types (e.g. BED, GTF), we provide specialized functions
 for reading data into a GenomicDataFrame. For example, a GTF file can be read
-more easily than above using the <code class="docutils literal"><span class="pre">from_gtf</span></code> method:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_gtf</span><span class="p">(</span><span class="s1">&#39;../data/example.gtf&#39;</span><span class="p">)</span>
+more easily than above using the <code class="docutils literal notranslate"><span class="pre">from_gtf</span></code> method:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_gtf</span><span class="p">(</span><span class="s1">&#39;../data/example.gtf&#39;</span><span class="p">)</span>
 <span class="n">gdf</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Similarly, bed files can be read using the <code class="docutils literal"><span class="pre">from_bed</span></code> method. See the API
+<p>Similarly, bed files can be read using the <code class="docutils literal notranslate"><span class="pre">from_bed</span></code> method. See the API
 for the full list of supported file formats. Any unsupported file formats can
-of course be read using the <code class="docutils literal"><span class="pre">from_csv</span></code> method or using the pandas API, as
+of course be read using the <code class="docutils literal notranslate"><span class="pre">from_csv</span></code> method or using the pandas API, as
 illustrated above.</p>
 </div>
 </div>
 <div class="section" id="querying">
 <h3>Querying<a class="headerlink" href="#querying" title="Permalink to this headline">¶</a></h3>
-<p>As a subclass of the pandas <code class="docutils literal"><span class="pre">DataFrame</span></code> class, GenomicDataFrames can be
+<p>As a subclass of the pandas <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> class, GenomicDataFrames can be
 queried in the same manner as normal pandas DataFrames using loc and iloc.
 However, GenomicDataFrames also provide an additional indexer under the
-<code class="docutils literal"><span class="pre">gloc</span></code> property, which can be used to perform ranged queries over
+<code class="docutils literal notranslate"><span class="pre">gloc</span></code> property, which can be used to perform ranged queries over
 the GenomicDataFrame.</p>
 <p>A simple range query can be performed as follows, in which we select any rows
 overlapping with bases 79935353-79935455 on chromosome 12:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_gtf</span><span class="p">(</span><span class="s1">&#39;../data/example.gtf&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_gtf</span><span class="p">(</span><span class="s1">&#39;../data/example.gtf&#39;</span><span class="p">)</span>
 <span class="n">gdf</span><span class="o">.</span><span class="n">gloc</span><span class="p">[</span><span class="s1">&#39;12&#39;</span><span class="p">][</span><span class="mi">79935353</span><span class="p">:</span><span class="mi">79935455</span><span class="p">]</span>
 </pre></div>
 </div>
-<p>In this query, the <code class="docutils literal"><span class="pre">gloc</span></code> indexer returns a slice object for chromosome 12,
+<p>In this query, the <code class="docutils literal notranslate"><span class="pre">gloc</span></code> indexer returns a slice object for chromosome 12,
 which we then slice using the given range coordinates to only select rows within
 the specified range.</p>
 <p>Entire chromosomes can be selected by passing a list of chromosome names to
-<code class="docutils literal"><span class="pre">gloc</span></code>, which also reorders chromosomes to match the given order:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_gtf</span><span class="p">(</span><span class="s1">&#39;../data/example.gtf&#39;</span><span class="p">)</span>
+<code class="docutils literal notranslate"><span class="pre">gloc</span></code>, which also reorders chromosomes to match the given order:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_gtf</span><span class="p">(</span><span class="s1">&#39;../data/example.gtf&#39;</span><span class="p">)</span>
 <span class="n">gdf</span><span class="o">.</span><span class="n">gloc</span><span class="p">[[</span><span class="s1">&#39;10&#39;</span><span class="p">,</span> <span class="s1">&#39;12&#39;</span><span class="p">]]</span>
 </pre></div>
 </div>
 <p>More complex queries (e.g. with left/right inclusiveness) can be performed using
-the <code class="docutils literal"><span class="pre">gloc.search</span></code> method, which provides the above functionality with some
+the <code class="docutils literal notranslate"><span class="pre">gloc.search</span></code> method, which provides the above functionality with some
 extra options.</p>
 </div>
 <div class="section" id="positioning">
 <h3>Positioning<a class="headerlink" href="#positioning" title="Permalink to this headline">¶</a></h3>
-<p>The <code class="docutils literal"><span class="pre">gloc</span></code> indexer can also be used to extract genomic positions directly,
-using the <code class="docutils literal"><span class="pre">chromosome</span></code>, <code class="docutils literal"><span class="pre">start</span></code> and <code class="docutils literal"><span class="pre">end</span></code> attributes of the indexer:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gdf</span><span class="o">.</span><span class="n">gloc</span><span class="o">.</span><span class="n">chromosome</span>  <span class="c1"># Chromosome values.</span>
+<p>The <code class="docutils literal notranslate"><span class="pre">gloc</span></code> indexer can also be used to extract genomic positions directly,
+using the <code class="docutils literal notranslate"><span class="pre">chromosome</span></code>, <code class="docutils literal notranslate"><span class="pre">start</span></code> and <code class="docutils literal notranslate"><span class="pre">end</span></code> attributes of the indexer:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">gdf</span><span class="o">.</span><span class="n">gloc</span><span class="o">.</span><span class="n">chromosome</span>  <span class="c1"># Chromosome values.</span>
 <span class="n">gdf</span><span class="o">.</span><span class="n">gloc</span><span class="o">.</span><span class="n">start</span>       <span class="c1"># Start positions.</span>
 <span class="n">gdf</span><span class="o">.</span><span class="n">gloc</span><span class="o">.</span><span class="n">end</span>         <span class="c1"># End positions.</span>
 </pre></div>
 </div>
 <p>The available chromosomes and their lengths are available through the
-<code class="docutils literal"><span class="pre">chromosomes</span></code> and <code class="docutils literal"><span class="pre">chromosome_lengths</span></code> attributes. Note that
+<code class="docutils literal notranslate"><span class="pre">chromosomes</span></code> and <code class="docutils literal notranslate"><span class="pre">chromosome_lengths</span></code> attributes. Note that
 chromosome lengths are inferred from the data if these were not given to
 the GenomicDataFrame constructor.</p>
 <p>The chromosome lengths can be used to calculate offset start/end positions, in
 which the lengths of preceding chromosomes are included in the start/end
 positions. This can be useful for plotting data linearly across multiple
-chromosomes. These offset positions can be accessed using the <code class="docutils literal"><span class="pre">start_offset</span></code>
-and the <code class="docutils literal"><span class="pre">end_offset</span></code> attributes.</p>
+chromosomes. These offset positions can be accessed using the <code class="docutils literal notranslate"><span class="pre">start_offset</span></code>
+and the <code class="docutils literal notranslate"><span class="pre">end_offset</span></code> attributes.</p>
 </div>
 </div>
 <div class="section" id="annotatedmatrices">
 <h2>AnnotatedMatrices<a class="headerlink" href="#annotatedmatrices" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal"><span class="pre">AnnotatedMatrix</span></code> classes provides functionality for storing a numeric
+<p><code class="docutils literal notranslate"><span class="pre">AnnotatedMatrix</span></code> classes provides functionality for storing a numeric
 matrix with features along the rows and samples along the columns, together
 with additional metadata describing the samples/features. This format
 is ideal for storing data from different types of high-throughput measurements
 (such as gene-expression counts or copy number calls) together with the
 corresponding sample/feature data.</p>
-<p>The base <code class="docutils literal"><span class="pre">AnnotatedMatrix</span></code> class can be used to store values that are indexed
+<p>The base <code class="docutils literal notranslate"><span class="pre">AnnotatedMatrix</span></code> class can be used to store values that are indexed
 by a set of (named) features, such as gene expression matrices (which contain
 counts summarized per gene).</p>
 <div class="section" id="id1">
 <h3>Construction<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <p>The easiest way to construct an AnnotatedMatrix is using a pre-existing
 DataFrame. Sample and feature information can be included by passing a DataFrame
-using the <code class="docutils literal"><span class="pre">sample_data</span></code> and <code class="docutils literal"><span class="pre">feature_data</span></code> arguments, respectively. Note
+using the <code class="docutils literal notranslate"><span class="pre">sample_data</span></code> and <code class="docutils literal notranslate"><span class="pre">feature_data</span></code> arguments, respectively. Note
 that the indices of these annotations should correspond with the matrix
 row/column indices:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">genopandas</span> <span class="kn">import</span> <span class="n">AnnotatedMatrix</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">genopandas</span> <span class="kn">import</span> <span class="n">AnnotatedMatrix</span>
 
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
         <span class="s1">&#39;sample_1&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
@@ -367,9 +367,9 @@ row/column indices:</p>
 <span class="n">AnnotatedMatrix</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">sample_data</span><span class="o">=</span><span class="n">sample_data</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Once constructed,  the matrix values can be accessed using the <code class="docutils literal"><span class="pre">values</span></code>
+<p>Once constructed,  the matrix values can be accessed using the <code class="docutils literal notranslate"><span class="pre">values</span></code>
 property, which returns the matrix in DataFrame format. The sample and feature
-annotations can be retrieved using the <code class="docutils literal"><span class="pre">sample_data</span></code> and <code class="docutils literal"><span class="pre">feature_data</span></code>
+annotations can be retrieved using the <code class="docutils literal notranslate"><span class="pre">sample_data</span></code> and <code class="docutils literal notranslate"><span class="pre">feature_data</span></code>
 attributes.</p>
 </div>
 <div class="section" id="subsetting-samples-features">
@@ -380,26 +380,26 @@ case, the AnnotatedMatrix class ensures that feature/sample annotations are
 kept in line with the subsetted matrix.</p>
 <p>Besides this, a number of specialized methods allow subsetting of the matrix
 based on the sample/feature annotations. Currently this includes the
-<code class="docutils literal"><span class="pre">query_samples</span></code> and <code class="docutils literal"><span class="pre">dropna_samples</span></code> methods, which can be used to query
+<code class="docutils literal notranslate"><span class="pre">query_samples</span></code> and <code class="docutils literal notranslate"><span class="pre">dropna_samples</span></code> methods, which can be used to query
 for specific samples or drop samples with NA values in their annotations,
 respectively. In general, these methods follow the API of their pandas
 equivalents.</p>
 </div>
 <div class="section" id="renaming-samples-features">
 <h3>Renaming samples/features<a class="headerlink" href="#renaming-samples-features" title="Permalink to this headline">¶</a></h3>
-<p>Features and/or samples can be renamed using the <code class="docutils literal"><span class="pre">rename</span></code> method, using
-the <code class="docutils literal"><span class="pre">index</span></code> parameter for features and the <code class="docutils literal"><span class="pre">columns</span></code> parameter for samples.
+<p>Features and/or samples can be renamed using the <code class="docutils literal notranslate"><span class="pre">rename</span></code> method, using
+the <code class="docutils literal notranslate"><span class="pre">index</span></code> parameter for features and the <code class="docutils literal notranslate"><span class="pre">columns</span></code> parameter for samples.
 The corresponding sample/feature annotations are renamed accordingly.</p>
 </div>
 <div class="section" id="melting-to-tidy-format">
 <h3>Melting to ‘tidy’ format<a class="headerlink" href="#melting-to-tidy-format" title="Permalink to this headline">¶</a></h3>
 <p>Matrices can be ‘melted’ into a tidy format (a.k.a. long format), which may
 be more suitable for certain types of processing/visualization than the matrix
-format. This type of transformation is performed using the <code class="docutils literal"><span class="pre">melt</span></code> method,
+format. This type of transformation is performed using the <code class="docutils literal notranslate"><span class="pre">melt</span></code> method,
 which returns a ‘tidy’ pandas DataFrame. Optionally, the parameters
-<code class="docutils literal"><span class="pre">with_sample_data</span></code> and <code class="docutils literal"><span class="pre">with_feature_data</span></code> can be used to indicate whether
+<code class="docutils literal notranslate"><span class="pre">with_sample_data</span></code> and <code class="docutils literal notranslate"><span class="pre">with_feature_data</span></code> can be used to indicate whether
 sample/feature annotations should be included in the produced DataFrame.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">seaborn</span> <span class="kn">as</span> <span class="nn">sns</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">seaborn</span> <span class="kn">as</span> <span class="nn">sns</span>
 
 <span class="n">df_long</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">with_sample_data</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="n">sns</span><span class="o">.</span><span class="n">boxplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">df_long</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s1">&#39;condition&#39;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
@@ -409,32 +409,32 @@ sample/feature annotations should be included in the produced DataFrame.</p>
 <div class="section" id="plotting">
 <h3>Plotting<a class="headerlink" href="#plotting" title="Permalink to this headline">¶</a></h3>
 <p>Several high-level plotting functions are provided for plotting matrix values
-in different representations. For example, the <code class="docutils literal"><span class="pre">plot_heatmap</span></code> method is most
+in different representations. For example, the <code class="docutils literal notranslate"><span class="pre">plot_heatmap</span></code> method is most
 useful for plotting a (clustered) overview of the matrix values, with optional
 feature/sample annotations:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">matrix</span><span class="o">.</span><span class="n">plot_heatmap</span><span class="p">(</span><span class="n">sample_cols</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;condition&#39;</span><span class="p">])</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">matrix</span><span class="o">.</span><span class="n">plot_heatmap</span><span class="p">(</span><span class="n">sample_cols</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;condition&#39;</span><span class="p">])</span>
 </pre></div>
 </div>
-<p>Similarly, the <code class="docutils literal"><span class="pre">plot_pca</span></code> method can be used to plot a PCA transform of the
+<p>Similarly, the <code class="docutils literal notranslate"><span class="pre">plot_pca</span></code> method can be used to plot a PCA transform of the
 matrix values. This transformation can be performed along either the sample or
 feature axes and can be colored according to specific sample/feature
 annotations:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">matrix</span><span class="o">.</span><span class="n">plot_pca</span><span class="p">(</span><span class="n">hue</span><span class="o">=</span><span class="s1">&#39;condition&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;samples&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">matrix</span><span class="o">.</span><span class="n">plot_pca</span><span class="p">(</span><span class="n">hue</span><span class="o">=</span><span class="s1">&#39;condition&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;samples&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Additionally, the <code class="docutils literal"><span class="pre">plot_feature</span></code> method can be used to create categorical
+<p>Additionally, the <code class="docutils literal notranslate"><span class="pre">plot_feature</span></code> method can be used to create categorical
 plots (boxplot, swarmplot or violin plot) of feature values. These plots
 can be grouped by different feature characteristics to compare distributions
 of feature values across different sample groups:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">matrix</span><span class="o">.</span><span class="n">plot_feature</span><span class="p">(</span><span class="s1">&#39;gene_a&#39;</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s1">&#39;condition&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">matrix</span><span class="o">.</span><span class="n">plot_feature</span><span class="p">(</span><span class="s1">&#39;gene_a&#39;</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s1">&#39;condition&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="section" id="genomicmatrices">
 <h2>GenomicMatrices<a class="headerlink" href="#genomicmatrices" title="Permalink to this headline">¶</a></h2>
-<p>Similar to the GenomicsDataFrame, the <code class="docutils literal"><span class="pre">GenomicMatrix</span></code> class is a specialized
-version <code class="docutils literal"><span class="pre">AnnotatedMatrix</span></code> class that supports storing and querying of
+<p>Similar to the GenomicsDataFrame, the <code class="docutils literal notranslate"><span class="pre">GenomicMatrix</span></code> class is a specialized
+version <code class="docutils literal notranslate"><span class="pre">AnnotatedMatrix</span></code> class that supports storing and querying of
 genomically-positioned data. Besides this, the GenomicMatrix class provides
 additional functionality specific to manipulating and plotting
 genomically-oriented data.</p>
@@ -443,7 +443,7 @@ genomically-oriented data.</p>
 <p>GenomicMatrix instances can be constructed in the same manner as
 AnnotatedMatrices, although the matrix values should be supplied as a
 GenomicsDataFrame (with a MultiIndex containing three levels):</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
 
 <span class="kn">from</span> <span class="nn">genopandas</span> <span class="kn">import</span> <span class="n">GenomicMatrix</span>
@@ -466,55 +466,55 @@ GenomicsDataFrame (with a MultiIndex containing three levels):</p>
 <span class="n">matrix</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Matrix values can also be read from delimited files using the <code class="docutils literal"><span class="pre">from_csv</span></code>
-method. Besides this, the class also provides a <code class="docutils literal"><span class="pre">from_csv_condensed</span></code>
+<p>Matrix values can also be read from delimited files using the <code class="docutils literal notranslate"><span class="pre">from_csv</span></code>
+method. Besides this, the class also provides a <code class="docutils literal notranslate"><span class="pre">from_csv_condensed</span></code>
 method, which can expand a ‘condensed’ index (such as 1:10-20) to a multi-level
 index suitable for GenomicsDataFrames. The regex used for this expansion
-can be defined using the <code class="docutils literal"><span class="pre">index_regex</span></code> parameter of this method.</p>
+can be defined using the <code class="docutils literal notranslate"><span class="pre">index_regex</span></code> parameter of this method.</p>
 </div>
 <div class="section" id="querying-ranges">
 <h3>Querying ranges<a class="headerlink" href="#querying-ranges" title="Permalink to this headline">¶</a></h3>
 <p>Similar to the GenomicDataFrame class, GenomicMatrices can be subset to
-specific genomic ranges using the <code class="docutils literal"><span class="pre">gloc</span></code> indexer. For more details, see the
+specific genomic ranges using the <code class="docutils literal notranslate"><span class="pre">gloc</span></code> indexer. For more details, see the
 GenomicDataFrame documentation.</p>
 </div>
 <div class="section" id="resampling-imputation">
 <h3>Resampling/imputation<a class="headerlink" href="#resampling-imputation" title="Permalink to this headline">¶</a></h3>
 <p>For certain analyses or visualizations, it can be useful to resample a
 GenomicMatrix at a lower resolution or using specific bin sizes. The
-<code class="docutils literal"><span class="pre">resample</span></code> method can be used to resample a matrix to a given bin_size,
+<code class="docutils literal notranslate"><span class="pre">resample</span></code> method can be used to resample a matrix to a given bin_size,
 optionally starting from a given start position:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">matrix</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">bin_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">matrix</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">bin_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Imputation can be used to impute missing values from surrounding
-bins. The <code class="docutils literal"><span class="pre">impute</span></code> method can be used for this purpose, which uses the
+bins. The <code class="docutils literal notranslate"><span class="pre">impute</span></code> method can be used for this purpose, which uses the
 rolling median functionality from pandas to impute values from surrounding bins:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">matrix</span><span class="o">.</span><span class="n">impute</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">min_probes</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">matrix</span><span class="o">.</span><span class="n">impute</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">min_probes</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="id3">
 <h3>Plotting<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <p>Similar to the AnnotatedMatrix class, the GenomicMatrix class provides a
-<code class="docutils literal"><span class="pre">plot_heatmap</span></code> method for plotting a heatmap of matrix values along a genomic
+<code class="docutils literal notranslate"><span class="pre">plot_heatmap</span></code> method for plotting a heatmap of matrix values along a genomic
 axis:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">resampled</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">bin_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">resampled</span> <span class="o">=</span> <span class="n">matrix</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">bin_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">resampled</span><span class="o">.</span><span class="n">plot_heatmap</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>The <code class="docutils literal"><span class="pre">plot_sample</span></code> method can be used to plot values for a single sample:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">matrix</span><span class="o">.</span><span class="n">plot_sample</span><span class="p">(</span><span class="s1">&#39;sample_1&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<p>The <code class="docutils literal notranslate"><span class="pre">plot_sample</span></code> method can be used to plot values for a single sample:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">matrix</span><span class="o">.</span><span class="n">plot_sample</span><span class="p">(</span><span class="s1">&#39;sample_1&#39;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="section" id="specialized-matrices">
 <h2>Specialized matrices<a class="headerlink" href="#specialized-matrices" title="Permalink to this headline">¶</a></h2>
-<p>Besides the basic <code class="docutils literal"><span class="pre">AnnotatedMatrix</span></code> and <code class="docutils literal"><span class="pre">GenomicMatrix</span></code> classes, a number
-of more specalized matrix sub-classes are provided in the <code class="docutils literal"><span class="pre">genopandas.ngs</span></code>
-module. This currently includes the <code class="docutils literal"><span class="pre">CnvValueMatrix</span></code> and <code class="docutils literal"><span class="pre">CnvCallMatrix</span></code>
-classes for CNV data and the <code class="docutils literal"><span class="pre">ExpressionMatrix</span></code> class for RNA-seq expression
+<p>Besides the basic <code class="docutils literal notranslate"><span class="pre">AnnotatedMatrix</span></code> and <code class="docutils literal notranslate"><span class="pre">GenomicMatrix</span></code> classes, a number
+of more specalized matrix sub-classes are provided in the <code class="docutils literal notranslate"><span class="pre">genopandas.ngs</span></code>
+module. This currently includes the <code class="docutils literal notranslate"><span class="pre">CnvValueMatrix</span></code> and <code class="docutils literal notranslate"><span class="pre">CnvCallMatrix</span></code>
+classes for CNV data and the <code class="docutils literal notranslate"><span class="pre">ExpressionMatrix</span></code> class for RNA-seq expression
 data. See the respective class documentation for more information on
 class-specific functionality.</p>
 </div>
@@ -564,7 +564,7 @@ class-specific functionality.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.dev30+g62366b5.d20180224',
+            VERSION:'0.1.dev30+gfe5cd7b',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

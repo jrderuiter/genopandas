@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>genopandas.ngs.cnv &mdash; genopandas 0.1.dev30+g62366b5.d20180224 documentation</title>
+  <title>genopandas.ngs.cnv &mdash; genopandas 0.1.dev30+gfe5cd7b documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="genopandas 0.1.dev30+g62366b5.d20180224 documentation" href="../../../index.html"/>
+    <link rel="top" title="genopandas 0.1.dev30+gfe5cd7b documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -212,8 +212,8 @@
 
         <span class="n">segments</span> <span class="o">=</span> <span class="n">GenomicDataFrame</span><span class="p">(</span><span class="n">segment_data</span><span class="p">)</span>
         <span class="n">segments</span> <span class="o">=</span> <span class="n">segments</span><span class="o">.</span><span class="n">gloc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">gloc</span><span class="o">.</span><span class="n">chromosomes</span><span class="p">]</span>
-
-        <span class="k">return</span> <span class="n">segments</span></div>
+</div>
+        <span class="k">return</span> <span class="n">segments</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_segments_for_sample</span><span class="p">(</span><span class="n">sample_values</span><span class="p">):</span>
@@ -269,8 +269,8 @@
 
         <span class="c1"># Write file.</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;#type=COPY_NUMBER&#39;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">file_</span><span class="p">)</span>
-            <span class="n">igv_data</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">file_</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div></div>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;#type=COPY_NUMBER&#39;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">file_</span><span class="p">)</span></div></div>
+            <span class="n">igv_data</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">file_</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="CnvCallMatrix"><a class="viewcode-back" href="../../../api.html#genopandas.ngs.cnv.CnvCallMatrix">[docs]</a><span class="k">class</span> <span class="nc">CnvCallMatrix</span><span class="p">(</span><span class="n">AnnotatedMatrix</span><span class="p">):</span>
@@ -294,8 +294,8 @@
         <span class="k">for</span> <span class="n">sample</span><span class="p">,</span> <span class="n">ctrl</span> <span class="ow">in</span> <span class="nb">dict</span><span class="p">(</span><span class="n">control_samples</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_mask</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">[</span><span class="n">ctrl</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">[</span><span class="n">sample</span><span class="p">])</span>
             <span class="n">new_values</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">,</span> <span class="n">sample</span><span class="p">]</span> <span class="o">=</span> <span class="n">mask_value</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span><span class="n">new_values</span><span class="p">)</span></div>
+</div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constructor</span><span class="p">(</span><span class="n">new_values</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_call_mask</span><span class="p">(</span><span class="n">ctrl_values</span><span class="p">,</span> <span class="n">sample_values</span><span class="p">):</span>
@@ -308,8 +308,8 @@
 
         <span class="n">diff_sign</span> <span class="o">=</span> <span class="p">(</span><span class="n">ctrl_sign</span> <span class="o">-</span> <span class="n">sample_sign</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mf">1e-8</span>
         <span class="n">higher_val</span> <span class="o">=</span> <span class="n">sample_values</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">ctrl_values</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>
-
-        <span class="k">return</span> <span class="n">diff_sign</span> <span class="o">|</span> <span class="p">(</span><span class="o">~</span><span class="n">diff_sign</span> <span class="o">&amp;</span> <span class="n">higher_val</span><span class="p">)</span></div>
+</div>
+        <span class="k">return</span> <span class="n">diff_sign</span> <span class="o">|</span> <span class="p">(</span><span class="o">~</span><span class="n">diff_sign</span> <span class="o">&amp;</span> <span class="n">higher_val</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_padded_diff</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">pad_value</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
@@ -353,7 +353,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.dev30+g62366b5.d20180224',
+            VERSION:'0.1.dev30+gfe5cd7b',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

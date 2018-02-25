@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>genopandas.core.frame &mdash; genopandas 0.1.dev30+g62366b5.d20180224 documentation</title>
+  <title>genopandas.core.frame &mdash; genopandas 0.1.dev30+gfe5cd7b documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="genopandas 0.1.dev30+g62366b5.d20180224 documentation" href="../../../index.html"/>
+    <link rel="top" title="genopandas 0.1.dev30+gfe5cd7b documentation" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -227,8 +227,8 @@
             <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_position_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;DataFrame should have either two index levels &#39;</span>
-                             <span class="s1">&#39;(for positioned data) or three index levels &#39;</span>
-                             <span class="s1">&#39;(for ranged data)&#39;</span><span class="p">)</span></div>
+                             <span class="s1">&#39;(for positioned data) or three index levels &#39;</span></div>
+                             <span class="s1">&#39;(for ranged data)&#39;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="GenomicDataFrame.from_position_df"><a class="viewcode-back" href="../../../api.html#genopandas.core.frame.GenomicDataFrame.from_position_df">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_position_df</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -243,8 +243,8 @@
         <span class="n">new_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="o">.</span><span class="n">from_arrays</span><span class="p">(</span>
             <span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">],</span>
             <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;chromosome&#39;</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">])</span>
-
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">new_df</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</div>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">new_df</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="GenomicDataFrame.from_records"><a class="viewcode-back" href="../../../api.html#genopandas.core.frame.GenomicDataFrame.from_records">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_records</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
@@ -267,8 +267,8 @@
         <span class="n">df</span><span class="p">[</span><span class="n">index_col</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">index_col</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
 
         <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">index_col</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="n">drop_index_col</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">chrom_lengths</span><span class="o">=</span><span class="n">chrom_lengths</span><span class="p">)</span></div>
+</div>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">chrom_lengths</span><span class="o">=</span><span class="n">chrom_lengths</span><span class="p">)</span>
 
 <div class="viewcode-block" id="GenomicDataFrame.from_csv"><a class="viewcode-back" href="../../../api.html#genopandas.core.frame.GenomicDataFrame.from_csv">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_csv</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
@@ -311,8 +311,8 @@
         <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
             <span class="n">file_path</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="p">{</span><span class="n">index_col</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="nb">str</span><span class="p">},</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">index_col</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="n">drop_index_col</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">chrom_lengths</span><span class="o">=</span><span class="n">chrom_lengths</span><span class="p">)</span></div>
+</div>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">chrom_lengths</span><span class="o">=</span><span class="n">chrom_lengths</span><span class="p">)</span>
 
 <div class="viewcode-block" id="GenomicDataFrame.from_gtf"><a class="viewcode-back" href="../../../api.html#genopandas.core.frame.GenomicDataFrame.from_gtf">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_gtf</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">gtf_path</span><span class="p">,</span> <span class="n">filter_</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -323,8 +323,8 @@
             <span class="n">gdf</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_gtf_pysam</span><span class="p">(</span><span class="n">gtf_path</span><span class="p">,</span> <span class="n">filter_</span><span class="o">=</span><span class="n">filter_</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">gdf</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_gtf_pandas</span><span class="p">(</span><span class="n">gtf_path</span><span class="p">,</span> <span class="n">filter_</span><span class="o">=</span><span class="n">filter_</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">gdf</span></div>
+</div>
+        <span class="k">return</span> <span class="n">gdf</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_from_gtf_pandas</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">gtf_path</span><span class="p">,</span> <span class="n">filter_</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -460,8 +460,8 @@
 
         <span class="n">reset_values</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span>
             <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="n">drop</span><span class="p">,</span> <span class="n">col_level</span><span class="o">=</span><span class="n">col_level</span><span class="p">,</span> <span class="n">col_fill</span><span class="o">=</span><span class="n">col_fill</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">reset_values</span><span class="p">)</span></div>
+</div>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">reset_values</span><span class="p">)</span>
 
 <div class="viewcode-block" id="GenomicDataFrame.rename_chromosomes"><a class="viewcode-back" href="../../../api.html#genopandas.core.frame.GenomicDataFrame.rename_chromosomes">[docs]</a>    <span class="k">def</span> <span class="nf">rename_chromosomes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns copy with renamed chromosomes.&quot;&quot;&quot;</span>
@@ -478,8 +478,8 @@
         <span class="n">new_values</span><span class="p">[</span><span class="n">chrom_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_values</span><span class="p">[</span><span class="n">chrom_col</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">map_func</span><span class="p">)</span>
 
         <span class="n">new_values</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="n">chrom_col</span><span class="p">,</span> <span class="n">start_col</span><span class="p">,</span> <span class="n">end_col</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_values</span><span class="p">)</span></div></div>
+</div></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_values</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="GenomicIndexer"><a class="viewcode-back" href="../../../api.html#genopandas.core.frame.GenomicIndexer">[docs]</a><span class="k">class</span> <span class="nc">GenomicIndexer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -593,8 +593,8 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trees</span>
 
 <div class="viewcode-block" id="GenomicIndexer.rebuild"><a class="viewcode-back" href="../../../api.html#genopandas.core.frame.GenomicIndexer.rebuild">[docs]</a>    <span class="k">def</span> <span class="nf">rebuild</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Rebuilds the genomic interval trees.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_trees</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_trees</span><span class="p">()</span></div>
+        <span class="sd">&quot;&quot;&quot;Rebuilds the genomic interval trees.&quot;&quot;&quot;</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trees</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_trees</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_build_trees</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">tuples</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">chromosome</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">,</span>
@@ -617,8 +617,8 @@
             <span class="n">strict_right</span><span class="o">=</span><span class="n">strict_right</span><span class="p">)</span>
 
         <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">interval</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">interval</span> <span class="ow">in</span> <span class="n">overlap</span><span class="p">]</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span></div></div>
+</div></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
 
 
 <span class="k">class</span> <span class="nc">GenomicSlice</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -683,7 +683,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.1.dev30+g62366b5.d20180224',
+            VERSION:'0.1.dev30+gfe5cd7b',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

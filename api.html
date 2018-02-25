@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API &mdash; genopandas 0.1.dev30+g62366b5.d20180224 documentation</title>
+  <title>API &mdash; genopandas 0.1.dev30+gfe5cd7b documentation</title>
   
 
   
@@ -35,7 +35,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="genopandas 0.1.dev30+g62366b5.d20180224 documentation" href="index.html"/>
+    <link rel="top" title="genopandas 0.1.dev30+gfe5cd7b documentation" href="index.html"/>
         <link rel="next" title="Contributing" href="contributing.html"/>
         <link rel="prev" title="Usage" href="usage.html"/> 
 
@@ -189,7 +189,7 @@
 DataFrame, as these columns are used for indexing.</p>
 <p class="rubric">Examples</p>
 <p>Constructing from scratch:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span>
 <span class="gp">... </span>   <span class="p">[(</span><span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">)],</span>
 <span class="gp">... </span>   <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;chromosome&#39;</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s1">&#39;chromosome&#39;</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">])</span>
@@ -197,11 +197,11 @@ DataFrame, as these columns are used for indexing.</p>
 </pre></div>
 </div>
 <p>Reading from a GTF file:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_gtf</span><span class="p">(</span><span class="s1">&#39;/path/to/reference.gtf&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">GenomicDataFrame</span><span class="o">.</span><span class="n">from_gtf</span><span class="p">(</span><span class="s1">&#39;/path/to/reference.gtf&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Querying by a genomic range:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">genomic_df</span><span class="o">.</span><span class="n">gloc</span><span class="p">[</span><span class="s1">&#39;2&#39;</span><span class="p">][</span><span class="mi">30</span><span class="p">:</span><span class="mi">50</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">genomic_df</span><span class="o">.</span><span class="n">gloc</span><span class="p">[</span><span class="s1">&#39;2&#39;</span><span class="p">][</span><span class="mi">30</span><span class="p">:</span><span class="mi">50</span><span class="p">]</span>
 </pre></div>
 </div>
 <dl class="attribute">
@@ -219,7 +219,7 @@ DataFrame, as these columns are used for indexing.</p>
 <dl class="classmethod">
 <dt id="genopandas.core.frame.GenomicDataFrame.from_csv">
 <em class="property">classmethod </em><code class="descname">from_csv</code><span class="sig-paren">(</span><em>file_path</em>, <em>index_col</em>, <em>drop_index_col=True</em>, <em>chrom_lengths=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/frame.html#GenomicDataFrame.from_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.frame.GenomicDataFrame.from_csv" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a GenomicDataFrame from a csv file using <code class="docutils literal"><span class="pre">pandas.read_csv</span></code>.</p>
+<dd><p>Creates a GenomicDataFrame from a csv file using <code class="docutils literal notranslate"><span class="pre">pandas.read_csv</span></code>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -233,7 +233,7 @@ the DataFrame are used by default.</li>
 <li><strong>drop_index_col</strong> (<em>bool</em>) – Whether to drop the index columns in the DataFrame (True, default)
 or to drop them from the dataframe (False).</li>
 <li><strong>chrom_lengths</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em>) – Chromosome lengths.</li>
-<li><strong>**kwargs</strong> – Any extra kwargs are passed to <code class="docutils literal"><span class="pre">pandas.read_csv</span></code>.</li>
+<li><strong>**kwargs</strong> – Any extra kwargs are passed to <code class="docutils literal notranslate"><span class="pre">pandas.read_csv</span></code>.</li>
 </ul>
 </td>
 </tr>
@@ -400,7 +400,7 @@ sub-classes, examples being genes (for gene expression matrices) and
 region-based bins (for copy-number data).</p>
 <p>This (base) class mainly contains a variety of methods for querying,
 subsetting and combining different annotation matrices. General plotting
-methods are also provided (<code class="docutils literal"><span class="pre">plot_heatmap</span></code>).</p>
+methods are also provided (<code class="docutils literal notranslate"><span class="pre">plot_heatmap</span></code>).</p>
 <p>Note that the class follows the feature-by-sample convention that is
 typically followed in biological packages, rather than the sample-by-feature
 orientation. This has the additional advantage of allowing more complex
@@ -484,7 +484,7 @@ with the rows of the matrix.</p>
 <dt id="genopandas.core.matrix.AnnotatedMatrix.query_samples">
 <code class="descname">query_samples</code><span class="sig-paren">(</span><em>expr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/genopandas/core/matrix.html#AnnotatedMatrix.query_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#genopandas.core.matrix.AnnotatedMatrix.query_samples" title="Permalink to this definition">¶</a></dt>
 <dd><p>Subsets samples in matrix by querying sample_data with expression.</p>
-<p>Similar to the pandas <code class="docutils literal"><span class="pre">query</span></code> method, this method queries the sample
+<p>Similar to the pandas <code class="docutils literal notranslate"><span class="pre">query</span></code> method, this method queries the sample
 data of the matrix with the given boolean expression. Any samples for
 which the expression evaluates to True are returned in the resulting
 AnnotatedMatrix.</p>
@@ -495,7 +495,7 @@ AnnotatedMatrix.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>expr</strong> (<em>str</em>) – The query string to evaluate. You can refer to variables in the
 environment by prefixing them with an ‘&#64;’ character like &#64;a + b.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Subsetted matrix, containing only the samples for which <code class="docutils literal"><span class="pre">expr</span></code>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Subsetted matrix, containing only the samples for which <code class="docutils literal notranslate"><span class="pre">expr</span></code>
 evaluates to True.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#genopandas.core.matrix.AnnotatedMatrix" title="genopandas.core.matrix.AnnotatedMatrix">AnnotatedMatrix</a></td>
@@ -793,7 +793,7 @@ of samples.</li>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.dev30+g62366b5.d20180224',
+            VERSION:'0.1.dev30+gfe5cd7b',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
