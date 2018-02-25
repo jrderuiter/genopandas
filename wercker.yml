@@ -51,4 +51,4 @@ pypi:
         echo "repository = https://test.pypi.org/legacy/" >> ~/.pypirc
         echo "username:" $PYPI_USER >> ~/.pypirc
         echo "password:" $PYPI_PASSWORD >> ~/.pypirc
-        twine upload -r pypi --sign dist/*
+        twine upload -r pypi dist/*
