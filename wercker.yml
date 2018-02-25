@@ -31,7 +31,7 @@ docs:
       code: git remote set-url origin https://{$GH_TOKEN}:x-oauth-basic@github.com/jrderuiter/genopandas.git
     - script:
       name: gh-pages
-      code: make gh-pages
+      code: make gh-pages BRANCH=${WERCKER_GIT_BRANCH}
 
 pypi:
   steps:
