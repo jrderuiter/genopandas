@@ -8,6 +8,7 @@ test:
       name: populate-conda-cache
       code: |-
         if test -d "$WERCKER_CACHE_DIR/conda-pkgs"; then rsync -avz "$WERCKER_CACHE_DIR/conda-pkgs/*" /opt/conda/pkgs; fi
+        ls -alih "$WERCKER_CACHE_DIR/conda-pkgs"
     - install-packages:
       packages: make
     - script:
