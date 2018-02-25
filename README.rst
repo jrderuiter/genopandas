@@ -1,21 +1,23 @@
-PyIM
-====
+GenoPandas
+==========
 
-.. image:: https://img.shields.io/travis/jrderuiter/pyim.svg
-        :target: https://travis-ci.org/jrderuiter/pyim
-
-PyIM (Python Insertional Mutagenesis) is a python package for analyzing
-insertional mutagenesis data from targeted sequencing of transposon insertion
-sites. The package provides several command line tools for identifying
-insertions, calling common insertion sites (CISs) and annotating
-insertions/CISs directly from the command line. It also aims to provides
-the basic building blocks for implementing new pipelines, CIS callers, etc.
+GenoPandas is a library that provides various datastructures to support
+manipulation, querying and plotting of genomic data in Python. To do so,
+GenoPandas provides several pandas-based data structures, such as the
+``GenomicDataFrame`` and ``AnnotatedMatrix`` classes, which can be used to
+store different types of genomic data. For basic analyses, these classes
+also provide a variety of different manipulation and plotting functions.
 
 Documentation
 =============
 
 PyIM's documentation is available at
-`jrderuiter.github.io/pyim <http://jrderuiter.github.io/pyim/>`_.
+`jrderuiter.github.io/genopandas <http://jrderuiter.github.io/genopandas/>`_.
+
+Examples
+========
+
+Coming soon!
 
 License
 =======
