@@ -29,7 +29,7 @@ docs:
     - script:
       name: setup-git
       code: |
-        git remote set-url origin https://{$GH_TOKEN}:x-oauth-basic@github.com/jrderuiter/genopandas.git
+        git remote set-url origin https://${GH_TOKEN}:x-oauth-basic@github.com/jrderuiter/genopandas.git
         git remote update
         git fetch
         git checkout --track origin/${WERCKER_GIT_BRANCH}
