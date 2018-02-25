@@ -27,12 +27,14 @@ docs:
         source activate genopandas-dev
         pip install $WERCKER_SOURCE_DIR
     - script:
-      name: change-remote
+      name: setup-git
       code: |
         git remote set-url origin https://{$GH_TOKEN}:x-oauth-basic@github.com/jrderuiter/genopandas.git
         git remote update
         git fetch
         git checkout --track origin/${WERCKER_GIT_BRANCH}
+        git config --global user.email "wercker@wercker.com"
+        git config --global user.name "Wercker"
     - script:
       name: gh-pages
       code: make gh-pages BRANCH=${WERCKER_GIT_BRANCH}
