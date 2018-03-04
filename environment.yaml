@@ -1,13 +1,27 @@
 name: genopandas-dev
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
 dependencies:
-  - python =3.6
+  # Package requirements.
+  - python==3.6
   - pandas
   - intervaltree
-  - pysam
+  - toolz
+  - natsort
+
+  # Development requirements.
   - pytest
   - pylint
   - yapf
+  - sphinx
 
-  - pip
   - pip:
+    # Package requirements.
+    - pysam
+
+    # Development requirements.
     - pytest-helpers-namespace
+    - sphinx-autobuild
+    - sphinx_rtd_theme

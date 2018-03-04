@@ -2,7 +2,7 @@
 
 import pytest
 
-from genopandas import Interval, GenomicIntervalTree
+from genopandas.core.tree import Interval, GenomicIntervalTree
 
 # pylint: disable=redefined-outer-name,no-self-use
 

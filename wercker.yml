@@ -1,0 +1,66 @@
+box:
+  id: continuumio/miniconda3
+  tag: latest
+
+test:
+  steps:
+    - install-packages:
+      packages: make
+    - script:
+      name: setup-conda-env
+      code: |
+        conda update -n base conda
+        make env
+        source activate genopandas-dev
+        pip install $WERCKER_SOURCE_DIR
+    - script:
+      name: pytest
+      code: make test
+
+docs:
+  steps:
+    - install-packages:
+      packages: make
+    - script:
+      name: setup-conda-env
+      code: |
+        conda update -n base conda
+        make env
+        source activate genopandas-dev
+        pip install $WERCKER_SOURCE_DIR
+    - script:
+      name: setup-git
+      code: |
+        git remote set-url origin https://${GH_TOKEN}:x-oauth-basic@github.com/jrderuiter/genopandas.git
+        git remote update
+        git fetch
+        git checkout --track origin/${WERCKER_GIT_BRANCH}
+        git config --global user.email "wercker@wercker.com"
+        git config --global user.name "Wercker"
+    - script:
+      name: gh-pages
+      code: make gh-pages BRANCH=${WERCKER_GIT_BRANCH}
+
+pypi:
+  steps:
+    - install-packages:
+      packages: make
+    - script:
+      name: setup-conda-env
+      code: |
+        conda update -n base conda
+        conda create -c conda-forge -n pypi python=3.6 setuptools wheel twine
+        source activate pypi
+    - script:
+      name: build-wheel
+      code: |
+        rm -rf build
+        python setup.py sdist bdist_wheel
+    - script:
+      name: upload-to-pypi
+      code: |
+        echo "[pypi]" > ~/.pypirc
+        echo "username:" $PYPI_USER >> ~/.pypirc
+        echo "password:" $PYPI_PASSWORD >> ~/.pypirc
+        twine upload -r pypi dist/*
+        rm -f  ~/.pypirc
