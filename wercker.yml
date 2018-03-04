@@ -34,7 +34,7 @@ docs:
         git remote set-url origin https://${GH_TOKEN}:x-oauth-basic@github.com/jrderuiter/genopandas.git
         git remote update
         git fetch
-        git checkout --track origin/${WERCKER_GIT_BRANCH}
+        git checkout ${WERCKER_GIT_BRANCH}
         git config --global user.email "wercker@wercker.com"
         git config --global user.name "Wercker"
     - script:
