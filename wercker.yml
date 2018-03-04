@@ -9,6 +9,7 @@ test:
     - script:
       name: setup-conda-env
       code: |
+        conda update -n base conda
         make env
         source activate genopandas-dev
         pip install $WERCKER_SOURCE_DIR
@@ -23,6 +24,7 @@ docs:
     - script:
       name: setup-conda-env
       code: |
+        conda update -n base conda
         make env
         source activate genopandas-dev
         pip install $WERCKER_SOURCE_DIR
@@ -46,6 +48,7 @@ pypi:
     - script:
       name: setup-conda-env
       code: |
+        conda update -n base conda
         conda create -c conda-forge -n pypi python=3.6 setuptools wheel twine
         source activate pypi
     - script:
